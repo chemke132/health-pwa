@@ -43,7 +43,10 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-6">
-      <div className="absolute top-4 right-4">
+      <div
+        className="absolute right-4"
+        style={{ top: 'calc(1rem + env(safe-area-inset-top))' }}
+      >
         <LanguageToggle />
       </div>
 

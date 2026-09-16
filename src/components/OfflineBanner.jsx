@@ -17,7 +17,8 @@ export default function OfflineBanner() {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
-          className="fixed top-3 inset-x-0 z-[60] flex justify-center pointer-events-none px-4"
+          className="fixed inset-x-0 z-[60] flex justify-center pointer-events-none px-4"
+          style={{ top: 'calc(0.75rem + env(safe-area-inset-top))' }}
         >
           <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-slate-800/90 dark:bg-slate-200/90 text-white dark:text-slate-900 text-xs font-semibold px-4 py-2 shadow-lg backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-amber-400" />
