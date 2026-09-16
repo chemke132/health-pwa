@@ -39,8 +39,15 @@ VITE_GEMINI_API_KEY=...        # get one at https://aistudio.google.com/apikey
 
 In the Supabase SQL Editor, create the `users` / `meals` / `workouts` / `weights` tables with their RLS policies.
 
-## Security Note
+## AI key: dev vs. production
 
-`VITE_GEMINI_API_KEY` is bundled into the browser and is therefore publicly visible.
-This is fine for personal / development use, but for production you should move the AI
-calls to a server (e.g. a Supabase Edge Function) so the key stays server-side.
+The Gemini calls choose their transport automatically:
+
+- **Dev** — if `VITE_GEMINI_API_KEY` is set, the browser calls Gemini directly (fast,
+  but the key is bundled into the client and publicly visible).
+- **Production** — leave `VITE_GEMINI_API_KEY` unset and the app calls the
+  `ai-parse` Supabase Edge Function (`supabase/functions/ai-parse`), which keeps the
+  key server-side. Deploy the function and set `GEMINI_API_KEY` as an Edge Function
+  secret.
+
+The system prompts live in both `src/lib/ai.js` and the Edge Function — keep them in sync.
