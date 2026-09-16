@@ -1,31 +1,31 @@
 # Health PWA
 
-모바일/데스크탑 적응형 PWA — 식단·운동·체중 기록. AI 자연어 파싱 + OCR 하이브리드 입력.
+An adaptive (mobile / desktop) Progressive Web App for tracking meals, workouts, and weight — with AI natural-language parsing and OCR-based hybrid input.
 
 ## Tech Stack
 
 - **Core**: React, Vite, React Router
 - **Styling / Animation**: Tailwind CSS, Framer Motion
 - **State**: Zustand
-- **Backend/Auth**: Supabase (email magic link / Google OAuth, Postgres + RLS)
+- **Backend / Auth**: Supabase (email magic link / Google OAuth, Postgres + Row Level Security)
 - **AI**: Google Gemini 1.5 Flash (`@google/generative-ai`)
 - **OCR**: tesseract.js (Web Worker, background pre-load)
 - **i18n**: react-i18next (KO / EN)
-- **Time**: date-fns / date-fns-tz (US Pacific 기준)
+- **Time**: date-fns / date-fns-tz (anchored to US Pacific Time)
 
 ## Features
 
-- **적응형 UI** — 모바일: 버블 탭바(Framer Motion `layoutId`), 데스크탑: 사이드바 + 그리드 대시보드
-- **식사 기록** — ① 즐겨먹는 식단 칩(Gemini 호출 없이 바로 저장, 비용 최적화) ② 자연어 입력 → Gemini JSON 파싱
-- **운동 기록** — 스크린샷 → Tesseract OCR → Gemini 보정 → 구조화 저장
-- **데이터** — 앱 로드 시 최근 30일 한 번에 fetch 후 로컬 필터링
-- **체중/목표** — 프로필 및 일자별 체중 기록
+- **Adaptive UI** — mobile: bubble tab bar (Framer Motion `layoutId`); desktop: sidebar + grid dashboard.
+- **Meal logging** — (1) favorite-meal chips that insert hardcoded nutrition directly (no Gemini call, cost-optimized bypass); (2) natural-language input parsed into structured nutrition via Gemini.
+- **Workout logging** — screenshot → Tesseract OCR → Gemini cleanup/structuring → saved.
+- **Data** — fetch the last 30 days once on load, then filter locally per selected day.
+- **Weight / goal** — profile metrics and per-day weight entries.
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env.local   # 값 채우기
+cp .env.example .env.local   # then fill in your values
 npm run dev
 ```
 
@@ -34,12 +34,13 @@ npm run dev
 ```
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
-VITE_GEMINI_API_KEY=...        # https://aistudio.google.com/apikey
+VITE_GEMINI_API_KEY=...        # get one at https://aistudio.google.com/apikey
 ```
 
-Supabase SQL Editor에서 `users / meals / workouts / weights` 테이블 + RLS 정책을 생성해야 합니다.
+In the Supabase SQL Editor, create the `users` / `meals` / `workouts` / `weights` tables with their RLS policies.
 
-## 보안 참고
+## Security Note
 
-`VITE_GEMINI_API_KEY`는 브라우저 번들에 노출됩니다. 개인/개발용에는 적합하지만, 프로덕션에서는
-AI 호출을 Supabase Edge Function 등 서버로 옮겨 키를 숨기는 것을 권장합니다.
+`VITE_GEMINI_API_KEY` is bundled into the browser and is therefore publicly visible.
+This is fine for personal / development use, but for production you should move the AI
+calls to a server (e.g. a Supabase Edge Function) so the key stays server-side.
