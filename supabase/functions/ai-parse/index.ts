@@ -44,17 +44,32 @@ Deno.serve(async (req) => {
   try {
     if (!GEMINI_API_KEY) return json({ error: 'GEMINI_API_KEY not set' }, 500);
 
-    const { kind, text } = await req.json();
-    if (!text || !String(text).trim()) return json({ error: 'text required' }, 400);
+    const { kind, text, names, targetLang } = await req.json();
 
-    const systemPrompt =
-      kind === 'workout' ? WORKOUT_SYSTEM_PROMPT : MEAL_SYSTEM_PROMPT;
-
-    const body = {
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ parts: [{ text: String(text) }] }],
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
-    };
+    let body;
+    if (kind === 'translate') {
+      if (!Array.isArray(names) || names.length === 0) {
+        return json({ error: 'names required' }, 400);
+      }
+      const langName = targetLang === 'ko' ? 'Korean' : 'English';
+      const prompt =
+        `Translate each of these food names to ${langName}. Keep quantities and ` +
+        `units (e.g. 200g, 2 scoops). Reply with ONLY a JSON object mapping each ` +
+        `original string exactly to its translation.\nNames: ${JSON.stringify(names)}`;
+      body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+      };
+    } else {
+      if (!text || !String(text).trim()) return json({ error: 'text required' }, 400);
+      const systemPrompt =
+        kind === 'workout' ? WORKOUT_SYSTEM_PROMPT : MEAL_SYSTEM_PROMPT;
+      body = {
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ parts: [{ text: String(text) }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+      };
+    }
 
     const resp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,

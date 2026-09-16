@@ -31,24 +31,42 @@ const genAI = USE_DIRECT ? new GoogleGenerativeAI(apiKey) : null;
 /* ------------------------------ transport ------------------------------- */
 
 /**
- * Returns the model's parsed JSON (object or array) for a given kind + text.
+ * Returns the model's parsed JSON for a given kind.
+ * `payload` is a string for meal/workout, or { names, targetLang } for translate.
  * Chooses the direct SDK or the Edge Function based on USE_DIRECT.
  */
-async function callGemini(kind, text) {
+async function callGemini(kind, payload) {
   if (USE_DIRECT) {
+    let systemInstruction;
+    let userText;
+    if (kind === 'translate') {
+      const langName = payload.targetLang === 'ko' ? 'Korean' : 'English';
+      userText =
+        `Translate each of these food names to ${langName}. Keep quantities and ` +
+        `units. Reply with ONLY a JSON object mapping each original string exactly ` +
+        `to its translation.\nNames: ${JSON.stringify(payload.names)}`;
+    } else {
+      systemInstruction = kind === 'workout' ? WORKOUT_SYSTEM_PROMPT : MEAL_SYSTEM_PROMPT;
+      userText = payload;
+    }
     const model = genAI.getGenerativeModel({
       model: MODEL,
-      systemInstruction: kind === 'workout' ? WORKOUT_SYSTEM_PROMPT : MEAL_SYSTEM_PROMPT,
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+      systemInstruction,
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: kind === 'translate' ? 0 : 0.2,
+      },
     });
-    const result = await model.generateContent(text);
+    const result = await model.generateContent(userText);
     return parseJson(result.response.text());
   }
 
   // Edge Function path (key stays server-side).
-  const { data, error } = await supabase.functions.invoke('ai-parse', {
-    body: { kind, text },
-  });
+  const body =
+    kind === 'translate'
+      ? { kind, names: payload.names, targetLang: payload.targetLang }
+      : { kind, text: payload };
+  const { data, error } = await supabase.functions.invoke('ai-parse', { body });
   if (error) throw error;
   if (data?.error) throw new Error(data.detail || data.error);
   return data.result;
@@ -109,6 +127,23 @@ export async function parseMealText(text) {
  * Structure (possibly garbled) OCR text into a workout record.
  * → { workout_desc, burned_calories, duration_mins }
  */
+/* ------------------------- Translate food names ------------------------- */
+
+/**
+ * Translate a list of food names to `targetLang` ('ko' | 'en').
+ * Returns a map { originalName: translatedName }. Unknowns fall back to original.
+ */
+export async function translateFoodNames(names, targetLang) {
+  const unique = [...new Set(names.filter((n) => n && n.trim()))];
+  if (!unique.length) return {};
+  const data = await callGemini('translate', { names: unique, targetLang });
+  const out = {};
+  for (const n of unique) {
+    out[n] = data && data[n] ? String(data[n]) : n;
+  }
+  return out;
+}
+
 export async function parseWorkoutText(ocrText) {
   const parsed = await callGemini('workout', ocrText);
   const data = Array.isArray(parsed) ? parsed[0] ?? {} : parsed;

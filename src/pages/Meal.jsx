@@ -7,14 +7,22 @@ import Modal from '../components/Modal';
 import { Field, TextInput, FormActions } from '../components/Field';
 import { parseMealText } from '../lib/ai';
 import { FAVORITE_MEALS } from '../lib/favoriteMeals';
+import { useFoodTranslations } from '../lib/foodTranslate';
 
 const EMPTY = { food_name: '', calories: '', protein: '', carbs: '', fat: '' };
 
 export default function Meal() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage?.startsWith('ko') ? 'ko' : 'en';
   const meals = useAppStore(selectMealsForDate);
   const addMeal = useAppStore((s) => s.addMeal);
   const removeRow = useAppStore((s) => s.removeRow);
+
+  // Translate stored food names to the current language for display.
+  const nameMap = useFoodTranslations(
+    meals.map((m) => m.food_name),
+    lang
+  );
 
   const [open, setOpen] = useState(false);
   const [nlText, setNlText] = useState('');
@@ -118,7 +126,9 @@ export default function Meal() {
               disabled={chipBusy === fav.label}
               className="rounded-full border border-brand/40 bg-brand/10 text-brand-fg dark:text-brand px-3 py-1.5 text-sm font-semibold hover:bg-brand/20 disabled:opacity-50 transition"
             >
-              {chipBusy === fav.label ? '…' : `+ ${fav.label}`}
+              {chipBusy === fav.label
+                ? '…'
+                : `+ ${lang === 'ko' ? fav.label : fav.labelEn}`}
             </button>
           ))}
         </div>
@@ -137,7 +147,7 @@ export default function Meal() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-bold text-slate-800 dark:text-slate-100">
-                    {m.food_name}
+                    {nameMap[m.food_name] ?? m.food_name}
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5 space-x-2">
                     <span>{t('meal.protein')} {m.protein ?? 0}g</span>
