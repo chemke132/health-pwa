@@ -31,7 +31,10 @@
     "caloriesOut": "소모 칼로리",
     "net": "순 칼로리",
     "weight": "체중",
-    "noWeight": "기록 없음"
+    "noWeight": "기록 없음",
+    "weightTrend": "체중 추이",
+    "calorieTrend": "순 칼로리 추이",
+    "notEnoughData": "데이터가 2일 이상 쌓이면 그래프가 표시됩니다."
   },
   "meal": {
     "title": "식단",

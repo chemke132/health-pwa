@@ -3,8 +3,12 @@ import {
   useAppStore,
   selectDayTotals,
   selectWeightForDate,
+  selectWeightSeries,
+  selectNetCalorieSeries,
 } from '../store/useAppStore';
 import Card from '../components/Card';
+import TrendChart from '../components/TrendChart';
+import { shortDateLabel } from '../lib/timezone';
 
 function Stat({ label, value, unit }) {
   return (
@@ -20,10 +24,18 @@ function Stat({ label, value, unit }) {
   );
 }
 
+const withLabels = (series) =>
+  series.map((p) => ({ label: shortDateLabel(p.dateKey), value: p.value }));
+
 export default function Home() {
   const { t } = useTranslation();
   const totals = useAppStore(selectDayTotals);
   const weight = useAppStore(selectWeightForDate);
+  const weightSeries = useAppStore(selectWeightSeries);
+  const calorieSeries = useAppStore(selectNetCalorieSeries);
+
+  const weightData = withLabels(weightSeries);
+  const calorieData = withLabels(calorieSeries);
 
   return (
     <div className="space-y-4">
@@ -44,6 +56,24 @@ export default function Home() {
             value={weight ? weight.weight : t('home.noWeight')}
             unit={weight ? t('goal.kg') : ''}
           />
+        </Card>
+      </div>
+
+      {/* Trend charts (last 30 days) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card title={t('home.weightTrend')}>
+          {weightData.length >= 2 ? (
+            <TrendChart data={weightData} unit={t('goal.kg')} />
+          ) : (
+            <p className="text-sm text-slate-400">{t('home.notEnoughData')}</p>
+          )}
+        </Card>
+        <Card title={t('home.calorieTrend')}>
+          {calorieData.length >= 2 ? (
+            <TrendChart data={calorieData} unit=" kcal" />
+          ) : (
+            <p className="text-sm text-slate-400">{t('home.notEnoughData')}</p>
+          )}
         </Card>
       </div>
     </div>

@@ -52,6 +52,12 @@ export function isTodayKey(dateKey) {
   return dateKey === todayKey();
 }
 
+/** Short chart label, e.g. "9/15". */
+export function shortDateLabel(dateKey) {
+  const d = parseISO(`${dateKey}T00:00:00`);
+  return format(d, 'M/d');
+}
+
 /** Human-readable header date, localized. e.g. "Mon, Sep 15" */
 export function formatHeaderDate(dateKey, locale) {
   // dateKey is a plain calendar day; render it as-is without TZ shifting.

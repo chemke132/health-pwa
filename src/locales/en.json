@@ -31,7 +31,10 @@
     "caloriesOut": "Calories burned",
     "net": "Net",
     "weight": "Weight",
-    "noWeight": "No entry"
+    "noWeight": "No entry",
+    "weightTrend": "Weight trend",
+    "calorieTrend": "Net calorie trend",
+    "notEnoughData": "The chart appears once you have 2+ days of data."
   },
   "meal": {
     "title": "Meals",

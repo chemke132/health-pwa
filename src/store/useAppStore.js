@@ -108,6 +108,26 @@ export const selectWorkoutsForDate = (state) =>
 export const selectWeightForDate = (state) =>
   state.appData.weights.find((w) => w.record_date === state.currentDate) ?? null;
 
+/** Weight points sorted oldest → newest, for the trend chart. */
+export const selectWeightSeries = (state) =>
+  [...state.appData.weights]
+    .sort((a, b) => a.record_date.localeCompare(b.record_date))
+    .map((w) => ({ dateKey: w.record_date, value: w.weight }));
+
+/** Net calories (in − out) per day that has any entry, oldest → newest. */
+export const selectNetCalorieSeries = (state) => {
+  const byDate = {};
+  for (const m of state.appData.meals) {
+    (byDate[m.record_date] ??= { in: 0, out: 0 }).in += m.calories ?? 0;
+  }
+  for (const w of state.appData.workouts) {
+    (byDate[w.record_date] ??= { in: 0, out: 0 }).out += w.burned_calories ?? 0;
+  }
+  return Object.keys(byDate)
+    .sort()
+    .map((d) => ({ dateKey: d, value: byDate[d].in - byDate[d].out }));
+};
+
 export const selectDayTotals = (state) => {
   const meals = selectMealsForDate(state);
   const workouts = selectWorkoutsForDate(state);
