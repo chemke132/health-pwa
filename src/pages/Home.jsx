@@ -9,6 +9,7 @@ import {
 import Card from '../components/Card';
 import TrendChart from '../components/TrendChart';
 import { shortDateLabel } from '../lib/timezone';
+import { toDisplayWeight, unitLabel } from '../lib/units';
 
 function Stat({ label, value, unit }) {
   return (
@@ -24,18 +25,23 @@ function Stat({ label, value, unit }) {
   );
 }
 
-const withLabels = (series) =>
-  series.map((p) => ({ label: shortDateLabel(p.dateKey), value: p.value }));
-
 export default function Home() {
   const { t } = useTranslation();
   const totals = useAppStore(selectDayTotals);
   const weight = useAppStore(selectWeightForDate);
   const weightSeries = useAppStore(selectWeightSeries);
   const calorieSeries = useAppStore(selectNetCalorieSeries);
+  const unit = useAppStore((s) => s.weightUnit);
 
-  const weightData = withLabels(weightSeries);
-  const calorieData = withLabels(calorieSeries);
+  // weight series is stored in kg → convert to the display unit
+  const weightData = weightSeries.map((p) => ({
+    label: shortDateLabel(p.dateKey),
+    value: toDisplayWeight(p.value, unit),
+  }));
+  const calorieData = calorieSeries.map((p) => ({
+    label: shortDateLabel(p.dateKey),
+    value: p.value,
+  }));
 
   return (
     <div className="space-y-4">
@@ -53,8 +59,8 @@ export default function Home() {
         <Card>
           <Stat
             label={t('home.weight')}
-            value={weight ? weight.weight : t('home.noWeight')}
-            unit={weight ? t('goal.kg') : ''}
+            value={weight ? toDisplayWeight(weight.weight, unit) : t('home.noWeight')}
+            unit={weight ? unitLabel(unit) : ''}
           />
         </Card>
       </div>
@@ -63,7 +69,7 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title={t('home.weightTrend')}>
           {weightData.length >= 2 ? (
-            <TrendChart data={weightData} unit={t('goal.kg')} />
+            <TrendChart data={weightData} unit={unitLabel(unit)} />
           ) : (
             <p className="text-sm text-slate-400">{t('home.notEnoughData')}</p>
           )}

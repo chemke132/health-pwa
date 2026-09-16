@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from './navItems';
 import LanguageToggle from './LanguageToggle';
+import UnitToggle from './UnitToggle';
 import { useAppStore } from '../store/useAppStore';
 import { signOut } from '../lib/supabase';
 
@@ -43,7 +44,10 @@ export default function DesktopSidebar() {
       </nav>
 
       <div className="mt-auto space-y-4 px-1">
-        <LanguageToggle className="w-full justify-center" />
+        <div className="flex gap-2">
+          <LanguageToggle className="flex-1 justify-center" />
+          <UnitToggle className="flex-1 justify-center" />
+        </div>
         {user && (
           <div className="text-xs text-slate-400 truncate" title={user.email}>
             {user.email}

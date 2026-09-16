@@ -10,6 +10,14 @@ import {
 } from '../lib/dataService';
 import { todayKey } from '../lib/timezone';
 
+function readWeightUnit() {
+  try {
+    return localStorage.getItem('app_weight_unit') === 'lb' ? 'lb' : 'kg';
+  } catch {
+    return 'kg';
+  }
+}
+
 /**
  * Single source of truth for the app.
  *  - user:        the authenticated Supabase user (or null)
@@ -29,6 +37,17 @@ export const useAppStore = create((set, get) => ({
   // --- selected date ---
   currentDate: todayKey(),
   setCurrentDate: (currentDate) => set({ currentDate }),
+
+  // --- display unit for weight (kg canonical in DB) ---
+  weightUnit: readWeightUnit(),
+  setWeightUnit: (weightUnit) => {
+    try {
+      localStorage.setItem('app_weight_unit', weightUnit);
+    } catch {
+      // ignore storage errors (private mode, etc.)
+    }
+    set({ weightUnit });
+  },
 
   // --- cached data ---
   appData: { meals: [], workouts: [], weights: [], profile: null, fetchedAt: 0 },

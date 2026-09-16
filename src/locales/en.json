@@ -59,7 +59,7 @@
     "kg": "kg",
     "etaTitle": "Goal ETA",
     "etaOnTrack": "At this pace — goal in {{days}} days! 🎯",
-    "etaSub": "≈ {{kg}} kg/week · around {{date}}",
+    "etaSub": "≈ {{val}} {{unit}}/week · around {{date}}",
     "etaReached": "You've reached your target weight! 🎉",
     "etaSurplus": "You're in a calorie surplus right now. Shall we tweak the diet? 💪",
     "etaNeedData": "Need a bit more data to predict! (goal, BMR, weight logs)",

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import LanguageToggle from './LanguageToggle';
+import UnitToggle from './UnitToggle';
 
 /** Mobile-only top bar: app title + language toggle. Hidden on md+. */
 export default function Header() {
@@ -13,7 +14,10 @@ export default function Header() {
           {t('app.title')}
         </span>
       </div>
-      <LanguageToggle />
+      <div className="flex items-center gap-1.5">
+        <UnitToggle />
+        <LanguageToggle />
+      </div>
     </header>
   );
 }

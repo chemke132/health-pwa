@@ -16,11 +16,12 @@ import Modal from '../components/Modal';
 import { Field, TextInput, FormActions } from '../components/Field';
 import { buildChartData, computeEta, latestWeight } from '../lib/goalMath';
 import { formatHeaderDate } from '../lib/timezone';
+import { toDisplayWeight, toKg, unitLabel } from '../lib/units';
 
 const BRAND = '#0ea5e9';
 const ACTUAL = '#94a3b8';
 
-function EtaBanner({ eta }) {
+function EtaBanner({ eta, unit }) {
   const { t, i18n } = useTranslation();
   const locale = i18n.resolvedLanguage?.startsWith('ko') ? 'ko' : 'en';
 
@@ -37,7 +38,8 @@ function EtaBanner({ eta }) {
   if (eta.status === 'ok') {
     main = t('goal.etaOnTrack', { days: eta.etaDays });
     sub = t('goal.etaSub', {
-      kg: eta.weeklyLossKg,
+      val: toDisplayWeight(eta.weeklyLossKg, unit),
+      unit: unitLabel(unit),
       date: formatHeaderDate(eta.etaDateKey, locale),
     });
   } else {
@@ -73,15 +75,24 @@ export default function Goal() {
   const currentDate = useAppStore((s) => s.currentDate);
   const updateProfile = useAppStore((s) => s.updateProfile);
   const setWeight = useAppStore((s) => s.setWeight);
+  const unit = useAppStore((s) => s.weightUnit);
 
   const eta = computeEta({ weights, meals, workouts, profile });
-  const chartData = buildChartData(weights, 14);
-  const hasChart = chartData.some((d) => d.weight != null);
+  const rawChart = buildChartData(weights, 14);
+  const hasChart = rawChart.some((d) => d.weight != null);
+  // convert kg → display unit for the chart
+  const chartData = rawChart.map((r) => ({
+    ...r,
+    weight: toDisplayWeight(r.weight, unit),
+    ma: toDisplayWeight(r.ma, unit),
+  }));
   const current = latestWeight(weights) ?? profile?.current_weight ?? null;
 
-  // weight input
+  // weight input (shown in the display unit; saved as kg)
   const existingToday = weights.find((w) => w.record_date === currentDate);
-  const [weightVal, setWeightVal] = useState(existingToday?.weight ?? '');
+  const [weightVal, setWeightVal] = useState(
+    toDisplayWeight(existingToday?.weight, unit) ?? ''
+  );
   const [savingW, setSavingW] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
@@ -90,7 +101,7 @@ export default function Goal() {
     if (weightVal === '') return;
     setSavingW(true);
     try {
-      await setWeight(Number(weightVal));
+      await setWeight(toKg(weightVal, unit));
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 1500);
     } finally {
@@ -107,8 +118,8 @@ export default function Goal() {
 
   const openGoal = () => {
     setGoalForm({
-      current_weight: profile?.current_weight ?? '',
-      target_weight: profile?.target_weight ?? '',
+      current_weight: toDisplayWeight(profile?.current_weight, unit) ?? '',
+      target_weight: toDisplayWeight(profile?.target_weight, unit) ?? '',
       bmr: profile?.bmr ?? '',
     });
     setError(null);
@@ -121,8 +132,8 @@ export default function Goal() {
     setError(null);
     try {
       await updateProfile({
-        current_weight: numOrNull(goalForm.current_weight),
-        target_weight: numOrNull(goalForm.target_weight),
+        current_weight: toKg(goalForm.current_weight, unit),
+        target_weight: toKg(goalForm.target_weight, unit),
         bmr: numOrNull(goalForm.bmr),
       });
       setGoalOpen(false);
@@ -134,8 +145,8 @@ export default function Goal() {
   };
 
   const metrics = [
-    { label: t('goal.currentWeight'), value: current, unit: t('goal.kg') },
-    { label: t('goal.targetWeight'), value: profile?.target_weight, unit: t('goal.kg') },
+    { label: t('goal.currentWeight'), value: toDisplayWeight(current, unit), unit: unitLabel(unit) },
+    { label: t('goal.targetWeight'), value: toDisplayWeight(profile?.target_weight, unit), unit: unitLabel(unit) },
     { label: t('goal.bmr'), value: profile?.bmr, unit: 'kcal' },
   ];
 
@@ -168,7 +179,7 @@ export default function Goal() {
       </div>
 
       {/* ETA prediction */}
-      <EtaBanner eta={eta} />
+      <EtaBanner eta={eta} unit={unit} />
 
       {/* Moving-average chart */}
       <Card title={t('goal.chartTitle')}>
@@ -185,7 +196,7 @@ export default function Goal() {
               />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #e2e8f0' }}
-                formatter={(v, name) => [v != null ? `${v} kg` : '—', name]}
+                formatter={(v, name) => [v != null ? `${v} ${unitLabel(unit)}` : '—', name]}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Line
@@ -230,7 +241,7 @@ export default function Goal() {
               placeholder="0.0"
               className="w-36 bg-transparent text-4xl font-black tabular-nums text-slate-800 dark:text-slate-100 outline-none border-b-2 border-slate-200 dark:border-slate-700 focus:border-brand"
             />
-            <span className="text-lg font-bold text-slate-400 pb-1">{t('goal.kg')}</span>
+            <span className="text-lg font-bold text-slate-400 pb-1">{unitLabel(unit)}</span>
           </div>
           <button
             type="submit"

@@ -59,7 +59,7 @@
     "kg": "kg",
     "etaTitle": "목표 달성 예측",
     "etaOnTrack": "현재 페이스 유지 시 D-{{days}}일 뒤 달성! 🎯",
-    "etaSub": "주당 약 {{kg}}kg 감량 중 · 예상일 {{date}}",
+    "etaSub": "주당 약 {{val}}{{unit}} 감량 중 · 예상일 {{date}}",
     "etaReached": "목표 체중에 도달했어요! 🎉",
     "etaSurplus": "지금은 칼로리 흑자예요. 식단 조절을 시작해 볼까요? 💪",
     "etaNeedData": "예측하려면 데이터가 조금 더 필요해요! (목표·BMR·체중 기록)",
