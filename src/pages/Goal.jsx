@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LineChart,
@@ -102,6 +102,19 @@ export default function Goal() {
   );
   const [savingW, setSavingW] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+
+  // When the unit system toggles, convert the number currently in the input
+  // so the displayed value stays the same real weight (e.g. 193.1 lb → 87.6 kg).
+  const prevSystem = useRef(system);
+  useEffect(() => {
+    if (prevSystem.current === system) return;
+    setWeightVal((v) => {
+      if (v === '' || v == null) return v;
+      const kg = toKg(v, prevSystem.current);
+      return toDisplayWeight(kg, system) ?? '';
+    });
+    prevSystem.current = system;
+  }, [system]);
 
   const saveWeight = async (e) => {
     e.preventDefault();
