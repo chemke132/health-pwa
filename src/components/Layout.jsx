@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import BubbleTabBar from './BubbleTabBar';
 import DesktopSidebar from './DesktopSidebar';
+import DateStrip from './DateStrip';
 
 /**
  * Adaptive shell.
@@ -19,6 +20,7 @@ export default function Layout() {
 
         {/* pb-24 keeps content clear of the mobile tab bar; md removes it */}
         <main className="flex-1 px-4 py-4 pb-24 md:px-8 md:py-8 md:pb-8 max-w-6xl w-full mx-auto">
+          <DateStrip />
           <Outlet />
         </main>
       </div>

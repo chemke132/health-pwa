@@ -1,5 +1,5 @@
 import { formatInTimeZone, toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { format, subDays, parseISO } from 'date-fns';
+import { format, subDays, addDays, parseISO } from 'date-fns';
 
 /**
  * All record dates are anchored to US Pacific Time regardless of where the
@@ -39,6 +39,17 @@ export function dateKeyDaysAgo(days) {
  */
 export function dateKeyToUtcInstant(dateKey) {
   return fromZonedTime(`${dateKey}T00:00:00`, APP_TIME_ZONE);
+}
+
+/** Shift a `yyyy-MM-dd` key by N days (negative = past). */
+export function shiftDateKey(dateKey, days) {
+  const d = parseISO(`${dateKey}T00:00:00`);
+  return format(addDays(d, days), 'yyyy-MM-dd');
+}
+
+/** Is this key today (Pacific Time)? */
+export function isTodayKey(dateKey) {
+  return dateKey === todayKey();
 }
 
 /** Human-readable header date, localized. e.g. "Mon, Sep 15" */

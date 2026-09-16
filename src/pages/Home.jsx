@@ -27,8 +27,6 @@ export default function Home() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl md:text-2xl font-black">{t('home.title')}</h1>
-
       {/* Desktop: responsive CSS Grid dashboard. Mobile: single column. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card>
