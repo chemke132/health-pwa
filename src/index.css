@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  /* respect iOS safe areas for the bubble tab bar */
+  padding-bottom: env(safe-area-inset-bottom);
+}

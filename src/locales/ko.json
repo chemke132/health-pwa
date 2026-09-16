@@ -1,0 +1,95 @@
+{
+  "app": {
+    "title": "헬스"
+  },
+  "nav": {
+    "home": "홈",
+    "meal": "식단",
+    "workout": "운동",
+    "goal": "목표"
+  },
+  "lang": {
+    "toggle": "언어",
+    "ko": "한국어",
+    "en": "영어"
+  },
+  "auth": {
+    "signInGoogle": "구글로 로그인",
+    "signOut": "로그아웃",
+    "loading": "로그인 중…",
+    "welcome": "식단, 운동, 체중을 기록하세요.",
+    "emailPlaceholder": "이메일 주소",
+    "sendMagicLink": "로그인 링크 보내기",
+    "sending": "보내는 중…",
+    "magicLinkSent": "메일함을 확인하세요. 로그인 링크를 보냈어요.",
+    "invalidEmail": "올바른 이메일을 입력하세요.",
+    "or": "또는"
+  },
+  "home": {
+    "title": "오늘",
+    "caloriesIn": "섭취 칼로리",
+    "caloriesOut": "소모 칼로리",
+    "net": "순 칼로리",
+    "weight": "체중",
+    "noWeight": "기록 없음"
+  },
+  "meal": {
+    "title": "식단",
+    "empty": "이 날짜에 기록된 식사가 없습니다.",
+    "protein": "단백질",
+    "carbs": "탄수화물",
+    "fat": "지방",
+    "kcal": "kcal"
+  },
+  "workout": {
+    "title": "운동",
+    "empty": "이 날짜에 기록된 운동이 없습니다.",
+    "burned": "소모",
+    "duration": "시간",
+    "mins": "분"
+  },
+  "goal": {
+    "title": "목표",
+    "currentWeight": "현재 체중",
+    "targetWeight": "목표 체중",
+    "bmr": "기초대사량",
+    "kg": "kg"
+  },
+  "form": {
+    "add": "추가",
+    "save": "저장",
+    "cancel": "취소",
+    "saving": "저장 중…",
+    "delete": "삭제",
+    "required": "필수",
+    "addMeal": "식사 추가",
+    "addWorkout": "운동 추가",
+    "editGoal": "목표 수정",
+    "logWeight": "체중 기록",
+    "foodName": "음식 이름",
+    "calories": "칼로리",
+    "protein": "단백질 (g)",
+    "carbs": "탄수화물 (g)",
+    "fat": "지방 (g)",
+    "workoutDesc": "운동",
+    "burned": "소모 (kcal)",
+    "duration": "시간 (분)",
+    "weight": "체중 (kg)",
+    "favorites": "즐겨먹는 식단 (빠른 기록)",
+    "nlLabel": "자연어로 입력",
+    "nlPlaceholder": "예: 연어회 200g이랑 밥 반 공기 먹었어",
+    "analyze": "✨ AI 분석",
+    "analyzing": "AI 분석 중…",
+    "aiError": "AI 분석 실패 — 직접 입력해 주세요.",
+    "aiFilled": "AI가 채운 값이에요. 수정 후 저장하세요.",
+    "screenshotSection": "스크린샷 분석 (애플 피트니스 등)",
+    "pickImage": "📷 이미지 선택",
+    "ocrRunning": "이미지에서 글자 읽는 중…",
+    "aiParsing": "AI가 운동 정보 추출 중…",
+    "manualSection": "직접 입력"
+  },
+  "common": {
+    "today": "오늘",
+    "loading": "불러오는 중…"
+  }
+}

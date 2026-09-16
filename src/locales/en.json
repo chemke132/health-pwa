@@ -1,0 +1,95 @@
+{
+  "app": {
+    "title": "Health"
+  },
+  "nav": {
+    "home": "Home",
+    "meal": "Meal",
+    "workout": "Workout",
+    "goal": "Goal"
+  },
+  "lang": {
+    "toggle": "Language",
+    "ko": "KO",
+    "en": "EN"
+  },
+  "auth": {
+    "signInGoogle": "Sign in with Google",
+    "signOut": "Sign out",
+    "loading": "Signing you in…",
+    "welcome": "Track meals, workouts and weight.",
+    "emailPlaceholder": "Email address",
+    "sendMagicLink": "Send login link",
+    "sending": "Sending…",
+    "magicLinkSent": "Check your inbox — we sent you a login link.",
+    "invalidEmail": "Please enter a valid email.",
+    "or": "or"
+  },
+  "home": {
+    "title": "Today",
+    "caloriesIn": "Calories in",
+    "caloriesOut": "Calories burned",
+    "net": "Net",
+    "weight": "Weight",
+    "noWeight": "No entry"
+  },
+  "meal": {
+    "title": "Meals",
+    "empty": "No meals logged for this day.",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat",
+    "kcal": "kcal"
+  },
+  "workout": {
+    "title": "Workouts",
+    "empty": "No workouts logged for this day.",
+    "burned": "Burned",
+    "duration": "Duration",
+    "mins": "min"
+  },
+  "goal": {
+    "title": "Goal",
+    "currentWeight": "Current weight",
+    "targetWeight": "Target weight",
+    "bmr": "BMR",
+    "kg": "kg"
+  },
+  "form": {
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "delete": "Delete",
+    "required": "Required",
+    "addMeal": "Add meal",
+    "addWorkout": "Add workout",
+    "editGoal": "Edit goal",
+    "logWeight": "Log weight",
+    "foodName": "Food name",
+    "calories": "Calories",
+    "protein": "Protein (g)",
+    "carbs": "Carbs (g)",
+    "fat": "Fat (g)",
+    "workoutDesc": "Workout",
+    "burned": "Burned (kcal)",
+    "duration": "Duration (min)",
+    "weight": "Weight (kg)",
+    "favorites": "Favorites (quick log)",
+    "nlLabel": "Describe in your own words",
+    "nlPlaceholder": "e.g. 200g salmon sashimi and half a bowl of rice",
+    "analyze": "✨ AI analyze",
+    "analyzing": "Analyzing…",
+    "aiError": "AI analysis failed — enter manually.",
+    "aiFilled": "Filled by AI. Review and save.",
+    "screenshotSection": "Analyze screenshot (Apple Fitness, etc.)",
+    "pickImage": "📷 Pick image",
+    "ocrRunning": "Reading text from image…",
+    "aiParsing": "Extracting workout with AI…",
+    "manualSection": "Manual entry"
+  },
+  "common": {
+    "today": "Today",
+    "loading": "Loading…"
+  }
+}
