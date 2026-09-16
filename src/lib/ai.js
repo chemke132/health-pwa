@@ -16,7 +16,8 @@ if (!apiKey) {
 }
 
 const genAI = new GoogleGenerativeAI(apiKey);
-const MODEL = 'gemini-1.5-flash';
+// gemini-1.5/2.5-flash are closed to new users; 3.6-flash is the current flash tier.
+const MODEL = 'gemini-3.6-flash';
 
 /* ------------------------- System prompts (spec) ------------------------- */
 
@@ -36,16 +37,21 @@ function numeric(v) {
   return Number.isFinite(n) && n >= 0 ? Math.round(n) : 0;
 }
 
-/** Robustly pull a JSON object out of a model response. */
+/** Robustly pull JSON (object or array) out of a model response. */
 function parseJson(text) {
   try {
     return JSON.parse(text);
   } catch {
-    // Fallback: extract the first {...} block in case the model added prose.
-    const match = text.match(/\{[\s\S]*\}/);
+    // Fallback: extract the first {...} or [...] block in case the model added prose.
+    const match = text.match(/[[{][\s\S]*[\]}]/);
     if (match) return JSON.parse(match[0]);
     throw new Error('AI 응답을 JSON으로 해석하지 못했어요.');
   }
+}
+
+/** Sum a numeric field across items (rounds the total). */
+function sumField(items, key) {
+  return Math.round(items.reduce((acc, it) => acc + (Number(it?.[key]) || 0), 0));
 }
 
 /* --------------------------- Feature 1: Meal ---------------------------- */
@@ -64,12 +70,22 @@ export async function parseMealText(text) {
   const result = await model.generateContent(text);
   const data = parseJson(result.response.text());
 
+  // The model may return a single object or an array (one entry per food).
+  // Normalize both into one aggregated meal record.
+  const items = Array.isArray(data)
+    ? data
+    : Array.isArray(data.items)
+    ? data.items
+    : [data];
+
+  const names = items.map((i) => i?.food_name).filter(Boolean);
+
   return {
-    food_name: data.food_name?.toString().trim() || text.trim(),
-    calories: numeric(data.calories),
-    protein: numeric(data.protein),
-    carbs: numeric(data.carbs),
-    fat: numeric(data.fat),
+    food_name: names.join(', ') || text.trim(),
+    calories: sumField(items, 'calories'),
+    protein: sumField(items, 'protein'),
+    carbs: sumField(items, 'carbs'),
+    fat: sumField(items, 'fat'),
   };
 }
 
@@ -88,7 +104,9 @@ export async function parseWorkoutText(ocrText) {
   });
 
   const result = await model.generateContent(ocrText);
-  const data = parseJson(result.response.text());
+  const parsed = parseJson(result.response.text());
+  // A screenshot is usually one workout; if an array comes back, take the first.
+  const data = Array.isArray(parsed) ? parsed[0] ?? {} : parsed;
 
   return {
     workout_desc: data.workout_desc?.toString().trim() || '운동',
