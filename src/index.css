@@ -13,6 +13,12 @@ body,
   height: 100%;
 }
 
+/* Prevent the whole page from rubber-band bouncing (iOS Safari PWA feel). */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;

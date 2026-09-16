@@ -3,6 +3,7 @@ import Header from './Header';
 import BubbleTabBar from './BubbleTabBar';
 import DesktopSidebar from './DesktopSidebar';
 import DateStrip from './DateStrip';
+import OfflineBanner from './OfflineBanner';
 
 /**
  * Adaptive shell.
@@ -13,6 +14,7 @@ import DateStrip from './DateStrip';
 export default function Layout() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 md:flex">
+      <OfflineBanner />
       <DesktopSidebar />
 
       <div className="flex-1 flex flex-col min-w-0">

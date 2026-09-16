@@ -8,7 +8,15 @@ import {
   saveProfile,
   deleteRow,
 } from '../lib/dataService';
+import { enqueue, flushOutbox } from '../lib/sync';
 import { todayKey } from '../lib/timezone';
+
+/** Treat offline / fetch failures as "queue it"; real API errors rethrow. */
+function isOfflineError(err) {
+  if (!navigator.onLine) return true;
+  const msg = String(err?.message || '');
+  return /failed to fetch|networkerror|load failed/i.test(msg);
+}
 
 function readUnitSystem() {
   try {
@@ -79,25 +87,60 @@ export const useAppStore = create((set, get) => ({
 
   async addMeal(payload) {
     const { user, currentDate, appData } = get();
-    const row = await insertMeal(user.id, currentDate, payload);
-    set({ appData: { ...appData, meals: [row, ...appData.meals] } });
-    return row;
+    const record = { user_id: user.id, record_date: currentDate, ...payload };
+    try {
+      const row = await insertMeal(user.id, currentDate, payload);
+      set({ appData: { ...appData, meals: [row, ...appData.meals] } });
+      return row;
+    } catch (err) {
+      if (!isOfflineError(err)) throw err;
+      await enqueue('meals', record);
+      const optimistic = { id: `pending-${Date.now()}`, _pending: true, ...record };
+      set({ appData: { ...appData, meals: [optimistic, ...appData.meals] } });
+      return optimistic;
+    }
   },
 
   async addWorkout(payload) {
     const { user, currentDate, appData } = get();
-    const row = await insertWorkout(user.id, currentDate, payload);
-    set({ appData: { ...appData, workouts: [row, ...appData.workouts] } });
-    return row;
+    const record = { user_id: user.id, record_date: currentDate, ...payload };
+    try {
+      const row = await insertWorkout(user.id, currentDate, payload);
+      set({ appData: { ...appData, workouts: [row, ...appData.workouts] } });
+      return row;
+    } catch (err) {
+      if (!isOfflineError(err)) throw err;
+      await enqueue('workouts', record);
+      const optimistic = { id: `pending-${Date.now()}`, _pending: true, ...record };
+      set({ appData: { ...appData, workouts: [optimistic, ...appData.workouts] } });
+      return optimistic;
+    }
   },
 
   async setWeight(weight) {
     const { user, currentDate, appData } = get();
     const existing = appData.weights.find((w) => w.record_date === currentDate);
-    const row = await saveWeight(user.id, currentDate, weight, existing?.id);
-    const others = appData.weights.filter((w) => w.id !== row.id);
-    set({ appData: { ...appData, weights: [row, ...others] } });
-    return row;
+    try {
+      const row = await saveWeight(user.id, currentDate, weight, existing?.id);
+      const others = appData.weights.filter((w) => w.id !== row.id);
+      set({ appData: { ...appData, weights: [row, ...others] } });
+      return row;
+    } catch (err) {
+      if (!isOfflineError(err)) throw err;
+      const record = { user_id: user.id, record_date: currentDate, weight };
+      await enqueue('weights', record);
+      const others = appData.weights.filter((w) => w.record_date !== currentDate);
+      const optimistic = { id: `pending-${Date.now()}`, _pending: true, ...record };
+      set({ appData: { ...appData, weights: [optimistic, ...others] } });
+      return optimistic;
+    }
+  },
+
+  /** Flush the offline outbox to Supabase, then refresh from server. */
+  async syncOutbox() {
+    const n = await flushOutbox();
+    if (n > 0) await get().loadAppData();
+    return n;
   },
 
   async updateProfile(patch) {

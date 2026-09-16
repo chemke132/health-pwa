@@ -2,6 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from './navItems';
+import { useKeyboardOpen } from '../hooks/useKeyboardOpen';
 
 /**
  * Mobile bottom navigation. The active tab has a pill background that slides
@@ -11,6 +12,7 @@ import { NAV_ITEMS } from './navItems';
 export default function BubbleTabBar() {
   const { t } = useTranslation();
   const location = useLocation();
+  const keyboardOpen = useKeyboardOpen();
 
   const isActive = (item) =>
     item.end
@@ -19,7 +21,10 @@ export default function BubbleTabBar() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur"
+      aria-hidden={keyboardOpen}
+      className={`md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur transition-transform duration-200 ${
+        keyboardOpen ? 'translate-y-full' : 'translate-y-0'
+      }`}
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="flex items-stretch justify-around px-2 py-2">

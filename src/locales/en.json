@@ -106,6 +106,9 @@
     "aiParsing": "Extracting workout with AI…",
     "manualSection": "Manual entry"
   },
+  "offline": {
+    "message": "You're offline. (Offline Mode)"
+  },
   "common": {
     "today": "Today",
     "loading": "Loading…"
