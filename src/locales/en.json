@@ -114,7 +114,7 @@
     "subtitle": "Add it to your home screen for a native-app feel",
     "button": "Install",
     "how": "How to install",
-    "iosHelp": "Tap the Share button (⬆️) in Safari → 'Add to Home Screen'.",
+    "iosHelp": "Long-press the Safari address bar (or tap Share) → 'Add to Home Screen'.",
     "dismiss": "Dismiss"
   },
   "common": {
