@@ -8,6 +8,7 @@ import Meal from './pages/Meal';
 import Workout from './pages/Workout';
 import Goal from './pages/Goal';
 import Login from './pages/Login';
+import InstallPrompt from './components/InstallPrompt';
 
 export default function App() {
   const { t } = useTranslation();
@@ -40,6 +41,8 @@ export default function App() {
           </Route>
         </Routes>
       )}
+      {/* Install helper shows on both login and main screens */}
+      <InstallPrompt />
     </BrowserRouter>
   );
 }
