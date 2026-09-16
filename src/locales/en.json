@@ -56,7 +56,21 @@
     "currentWeight": "Current weight",
     "targetWeight": "Target weight",
     "bmr": "BMR",
-    "kg": "kg"
+    "kg": "kg",
+    "etaTitle": "Goal ETA",
+    "etaOnTrack": "At this pace — goal in {{days}} days! 🎯",
+    "etaSub": "≈ {{kg}} kg/week · around {{date}}",
+    "etaReached": "You've reached your target weight! 🎉",
+    "etaSurplus": "You're in a calorie surplus right now. Shall we tweak the diet? 💪",
+    "etaNeedData": "Need a bit more data to predict! (goal, BMR, weight logs)",
+    "etaTooFar": "Slow and steady — want to pick up the pace a little? 🐢",
+    "chartTitle": "Weight trend (14 days)",
+    "legendActual": "Actual",
+    "legendMa": "7-day average",
+    "chartEmpty": "Log your weight for a few days to see the chart.",
+    "logTitle": "Log today's weight",
+    "logHint": "Enter your weight measured right after waking up",
+    "saved": "Saved!"
   },
   "form": {
     "add": "Add",

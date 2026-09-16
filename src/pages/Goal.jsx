@@ -1,30 +1,109 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppStore, selectWeightForDate } from '../store/useAppStore';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import { useAppStore } from '../store/useAppStore';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import { Field, TextInput, FormActions } from '../components/Field';
+import { buildChartData, computeEta, latestWeight } from '../lib/goalMath';
+import { formatHeaderDate } from '../lib/timezone';
+
+const BRAND = '#0ea5e9';
+const ACTUAL = '#94a3b8';
+
+function EtaBanner({ eta }) {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage?.startsWith('ko') ? 'ko' : 'en';
+
+  const tone = {
+    ok: 'from-brand/20 to-brand/5 text-brand-fg dark:text-brand',
+    reached: 'from-emerald-400/20 to-emerald-400/5 text-emerald-700 dark:text-emerald-300',
+    surplus: 'from-amber-400/20 to-amber-400/5 text-amber-700 dark:text-amber-300',
+    too_far: 'from-slate-300/30 to-slate-300/5 text-slate-600 dark:text-slate-300',
+    need_data: 'from-slate-300/30 to-slate-300/5 text-slate-600 dark:text-slate-300',
+  }[eta.status];
+
+  let main;
+  let sub = null;
+  if (eta.status === 'ok') {
+    main = t('goal.etaOnTrack', { days: eta.etaDays });
+    sub = t('goal.etaSub', {
+      kg: eta.weeklyLossKg,
+      date: formatHeaderDate(eta.etaDateKey, locale),
+    });
+  } else {
+    main = t(`goal.${etaKey(eta.status)}`);
+  }
+
+  return (
+    <div className={`rounded-2xl bg-gradient-to-br ${tone} p-5`}>
+      <p className="text-xs font-bold uppercase tracking-wide opacity-70 mb-1">
+        {t('goal.etaTitle')}
+      </p>
+      <p className="text-lg font-black leading-snug">{main}</p>
+      {sub && <p className="text-sm font-medium opacity-80 mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+function etaKey(status) {
+  return {
+    reached: 'etaReached',
+    surplus: 'etaSurplus',
+    too_far: 'etaTooFar',
+    need_data: 'etaNeedData',
+  }[status];
+}
 
 export default function Goal() {
   const { t } = useTranslation();
   const profile = useAppStore((s) => s.appData.profile);
-  const weight = useAppStore(selectWeightForDate);
+  const weights = useAppStore((s) => s.appData.weights);
+  const meals = useAppStore((s) => s.appData.meals);
+  const workouts = useAppStore((s) => s.appData.workouts);
+  const currentDate = useAppStore((s) => s.currentDate);
   const updateProfile = useAppStore((s) => s.updateProfile);
   const setWeight = useAppStore((s) => s.setWeight);
 
+  const eta = computeEta({ weights, meals, workouts, profile });
+  const chartData = buildChartData(weights, 14);
+  const hasChart = chartData.some((d) => d.weight != null);
+  const current = latestWeight(weights) ?? profile?.current_weight ?? null;
+
+  // weight input
+  const existingToday = weights.find((w) => w.record_date === currentDate);
+  const [weightVal, setWeightVal] = useState(existingToday?.weight ?? '');
+  const [savingW, setSavingW] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  const saveWeight = async (e) => {
+    e.preventDefault();
+    if (weightVal === '') return;
+    setSavingW(true);
+    try {
+      await setWeight(Number(weightVal));
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 1500);
+    } finally {
+      setSavingW(false);
+    }
+  };
+
+  // goal edit modal
   const [goalOpen, setGoalOpen] = useState(false);
-  const [weightOpen, setWeightOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [goalForm, setGoalForm] = useState({ current_weight: '', target_weight: '', bmr: '' });
+  const [savingG, setSavingG] = useState(false);
   const [error, setError] = useState(null);
-
-  const [goalForm, setGoalForm] = useState({
-    current_weight: '',
-    target_weight: '',
-    bmr: '',
-  });
-  const [weightVal, setWeightVal] = useState('');
-
-  const num = (v) => (v === '' ? null : Number(v));
+  const numOrNull = (v) => (v === '' ? null : Number(v));
 
   const openGoal = () => {
     setGoalForm({
@@ -36,95 +115,131 @@ export default function Goal() {
     setGoalOpen(true);
   };
 
-  const openWeight = () => {
-    setWeightVal(weight?.weight ?? '');
-    setError(null);
-    setWeightOpen(true);
-  };
-
   const submitGoal = async (e) => {
     e.preventDefault();
-    setSaving(true);
+    setSavingG(true);
     setError(null);
     try {
       await updateProfile({
-        current_weight: num(goalForm.current_weight),
-        target_weight: num(goalForm.target_weight),
-        bmr: num(goalForm.bmr),
+        current_weight: numOrNull(goalForm.current_weight),
+        target_weight: numOrNull(goalForm.target_weight),
+        bmr: numOrNull(goalForm.bmr),
       });
       setGoalOpen(false);
     } catch (err) {
       setError(err.message);
     } finally {
-      setSaving(false);
+      setSavingG(false);
     }
   };
 
-  const submitWeight = async (e) => {
-    e.preventDefault();
-    if (weightVal === '') return;
-    setSaving(true);
-    setError(null);
-    try {
-      await setWeight(Number(weightVal));
-      setWeightOpen(false);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const rows = [
-    { key: 'goal.currentWeight', value: profile?.current_weight, unit: t('goal.kg') },
-    { key: 'goal.targetWeight', value: profile?.target_weight, unit: t('goal.kg') },
-    { key: 'goal.bmr', value: profile?.bmr, unit: 'kcal' },
+  const metrics = [
+    { label: t('goal.currentWeight'), value: current, unit: t('goal.kg') },
+    { label: t('goal.targetWeight'), value: profile?.target_weight, unit: t('goal.kg') },
+    { label: t('goal.bmr'), value: profile?.bmr, unit: 'kcal' },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl md:text-2xl font-black">{t('goal.title')}</h1>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={openWeight}
-            className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            {t('form.logWeight')}
-          </button>
-          <button
-            type="button"
-            onClick={openGoal}
-            className="rounded-xl bg-brand px-3 py-1.5 text-sm font-bold text-white shadow shadow-brand/30"
-          >
-            {t('form.editGoal')}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={openGoal}
+          className="rounded-xl bg-brand px-3 py-1.5 text-sm font-bold text-white shadow shadow-brand/30"
+        >
+          {t('form.editGoal')}
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {rows.map((r) => (
-          <Card key={r.key}>
+      {/* Top metrics */}
+      <div className="grid grid-cols-3 gap-3">
+        {metrics.map((m) => (
+          <Card key={m.label}>
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              {t(r.key)}
+              {m.label}
             </span>
-            <p className="mt-1 text-2xl font-black tabular-nums text-slate-800 dark:text-slate-100">
-              {r.value ?? '—'}
-              <span className="ml-1 text-sm font-medium text-slate-400">{r.unit}</span>
+            <p className="mt-1 text-xl md:text-2xl font-black tabular-nums text-slate-800 dark:text-slate-100">
+              {m.value ?? '—'}
+              <span className="ml-1 text-xs font-medium text-slate-400">{m.unit}</span>
             </p>
           </Card>
         ))}
       </div>
 
+      {/* ETA prediction */}
+      <EtaBanner eta={eta} />
+
+      {/* Moving-average chart */}
+      <Card title={t('goal.chartTitle')}>
+        {hasChart ? (
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.5} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: ACTUAL }} interval="preserveStartEnd" />
+              <YAxis
+                tick={{ fontSize: 11, fill: ACTUAL }}
+                width={44}
+                domain={[(min) => Math.floor(min - 1), (max) => Math.ceil(max + 1)]}
+                allowDecimals={false}
+              />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #e2e8f0' }}
+                formatter={(v, name) => [v != null ? `${v} kg` : '—', name]}
+              />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Line
+                type="monotone"
+                dataKey="ma"
+                name={t('goal.legendMa')}
+                stroke={BRAND}
+                strokeWidth={2.5}
+                dot={false}
+                connectNulls
+              />
+              <Line
+                type="monotone"
+                dataKey="weight"
+                name={t('goal.legendActual')}
+                stroke={ACTUAL}
+                strokeWidth={0}
+                dot={{ r: 3, fill: ACTUAL }}
+                connectNulls={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="text-sm text-slate-400">{t('goal.chartEmpty')}</p>
+        )}
+      </Card>
+
+      {/* Big weight input */}
       <Card>
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-          {t('home.weight')} · {t('common.today')}
-        </span>
-        <p className="mt-1 text-2xl font-black tabular-nums text-slate-800 dark:text-slate-100">
-          {weight ? weight.weight : t('home.noWeight')}
-          {weight && <span className="ml-1 text-sm font-medium text-slate-400">{t('goal.kg')}</span>}
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+          {t('goal.logTitle')}
         </p>
+        <p className="text-xs text-slate-400 mt-0.5">{t('goal.logHint')}</p>
+        <form onSubmit={saveWeight} className="mt-3 flex items-center gap-3">
+          <div className="flex items-end gap-2 flex-1">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              value={weightVal}
+              onChange={(e) => setWeightVal(e.target.value)}
+              placeholder="0.0"
+              className="w-36 bg-transparent text-4xl font-black tabular-nums text-slate-800 dark:text-slate-100 outline-none border-b-2 border-slate-200 dark:border-slate-700 focus:border-brand"
+            />
+            <span className="text-lg font-bold text-slate-400 pb-1">{t('goal.kg')}</span>
+          </div>
+          <button
+            type="submit"
+            disabled={savingW || weightVal === ''}
+            className="rounded-xl bg-brand px-5 py-3 text-sm font-bold text-white shadow shadow-brand/30 disabled:opacity-50"
+          >
+            {savedFlash ? t('goal.saved') : t('form.save')}
+          </button>
+        </form>
       </Card>
 
       {/* Edit goal / body metrics */}
@@ -158,29 +273,7 @@ export default function Goal() {
           {error && <p className="text-sm text-red-500">{error}</p>}
           <FormActions
             onCancel={() => setGoalOpen(false)}
-            saving={saving}
-            cancelLabel={t('form.cancel')}
-            saveLabel={t('form.save')}
-          />
-        </form>
-      </Modal>
-
-      {/* Log today's weight */}
-      <Modal open={weightOpen} onClose={() => setWeightOpen(false)} title={t('form.logWeight')}>
-        <form onSubmit={submitWeight} className="space-y-3">
-          <Field label={t('form.weight')}>
-            <TextInput
-              type="number"
-              inputMode="decimal"
-              value={weightVal}
-              onChange={(e) => setWeightVal(e.target.value)}
-              autoFocus
-            />
-          </Field>
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <FormActions
-            onCancel={() => setWeightOpen(false)}
-            saving={saving}
+            saving={savingG}
             cancelLabel={t('form.cancel')}
             saveLabel={t('form.save')}
           />
