@@ -72,23 +72,6 @@ export async function signInWithGoogle() {
   return data;
 }
 
-/**
- * Passwordless email "magic link" sign-in. Great for development because it
- * needs no external OAuth provider setup — just Supabase's built-in email.
- * Supabase sends a link that redirects back to `redirectTo` with a code, which
- * `detectSessionInUrl` then exchanges for a session.
- */
-export async function signInWithMagicLink(email) {
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: window.location.origin,
-      shouldCreateUser: true,
-    },
-  });
-  if (error) throw error;
-}
-
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;

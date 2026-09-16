@@ -17,13 +17,7 @@
     "signInGoogle": "구글로 로그인",
     "signOut": "로그아웃",
     "loading": "로그인 중…",
-    "welcome": "식단, 운동, 체중을 기록하세요.",
-    "emailPlaceholder": "이메일 주소",
-    "sendMagicLink": "로그인 링크 보내기",
-    "sending": "보내는 중…",
-    "magicLinkSent": "메일함을 확인하세요. 로그인 링크를 보냈어요.",
-    "invalidEmail": "올바른 이메일을 입력하세요.",
-    "or": "또는"
+    "welcome": "식단, 운동, 체중을 기록하세요."
   },
   "home": {
     "title": "오늘",

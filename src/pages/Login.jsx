@@ -1,40 +1,19 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { signInWithGoogle, signInWithMagicLink } from '../lib/supabase';
+import { signInWithGoogle } from '../lib/supabase';
 import LanguageToggle from '../components/LanguageToggle';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login() {
   const { t } = useTranslation();
-  const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
   const [error, setError] = useState(null);
-
-  const handleMagicLink = async (e) => {
-    e.preventDefault();
-    if (!EMAIL_RE.test(email)) {
-      setError(t('auth.invalidEmail'));
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      await signInWithMagicLink(email.trim());
-      setSent(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleGoogle = async () => {
     setBusy(true);
     setError(null);
     try {
       await signInWithGoogle();
+      // Redirects away; keep busy until the browser navigates.
     } catch (err) {
       setError(err.message);
       setBusy(false);
@@ -59,51 +38,41 @@ export default function Login() {
           <p className="text-sm text-slate-400">{t('auth.welcome')}</p>
         </div>
 
-        {sent ? (
-          <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 p-4 text-sm text-emerald-700 dark:text-emerald-300">
-            📧 {t('auth.magicLinkSent')}
-          </div>
-        ) : (
-          <>
-            {/* Email magic link (no external OAuth setup needed) */}
-            <form onSubmit={handleMagicLink} className="space-y-3">
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('auth.emailPlaceholder')}
-                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand"
-              />
-              <button
-                type="submit"
-                disabled={busy}
-                className="w-full rounded-2xl bg-brand text-white font-bold py-3 shadow-lg shadow-brand/30 disabled:opacity-60 transition"
-              >
-                {busy ? t('auth.sending') : t('auth.sendMagicLink')}
-              </button>
-            </form>
-
-            <div className="flex items-center gap-3 text-xs text-slate-300">
-              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-              {t('auth.or')}
-              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGoogle}
-              disabled={busy}
-              className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold py-3 text-slate-700 dark:text-slate-200 disabled:opacity-60 transition"
-            >
-              {t('auth.signInGoogle')}
-            </button>
-          </>
-        )}
+        <button
+          type="button"
+          onClick={handleGoogle}
+          disabled={busy}
+          className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold py-3.5 text-slate-700 dark:text-slate-200 shadow-sm disabled:opacity-60 transition"
+        >
+          <GoogleIcon />
+          {busy ? t('auth.loading') : t('auth.signInGoogle')}
+        </button>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
       </div>
     </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"
+      />
+    </svg>
   );
 }

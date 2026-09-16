@@ -17,13 +17,7 @@
     "signInGoogle": "Sign in with Google",
     "signOut": "Sign out",
     "loading": "Signing you in…",
-    "welcome": "Track meals, workouts and weight.",
-    "emailPlaceholder": "Email address",
-    "sendMagicLink": "Send login link",
-    "sending": "Sending…",
-    "magicLinkSent": "Check your inbox — we sent you a login link.",
-    "invalidEmail": "Please enter a valid email.",
-    "or": "or"
+    "welcome": "Track meals, workouts and weight."
   },
   "home": {
     "title": "Today",
