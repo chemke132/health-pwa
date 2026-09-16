@@ -10,11 +10,11 @@ import {
 } from '../lib/dataService';
 import { todayKey } from '../lib/timezone';
 
-function readWeightUnit() {
+function readUnitSystem() {
   try {
-    return localStorage.getItem('app_weight_unit') === 'lb' ? 'lb' : 'kg';
+    return localStorage.getItem('app_unit_system') === 'imperial' ? 'imperial' : 'metric';
   } catch {
-    return 'kg';
+    return 'metric';
   }
 }
 
@@ -38,15 +38,16 @@ export const useAppStore = create((set, get) => ({
   currentDate: todayKey(),
   setCurrentDate: (currentDate) => set({ currentDate }),
 
-  // --- display unit for weight (kg canonical in DB) ---
-  weightUnit: readWeightUnit(),
-  setWeightUnit: (weightUnit) => {
+  // --- display unit system: 'metric' (kg/cm) | 'imperial' (lb/ft) ---
+  // DB stays canonical (kg, cm); this only affects display + input.
+  unitSystem: readUnitSystem(),
+  setUnitSystem: (unitSystem) => {
     try {
-      localStorage.setItem('app_weight_unit', weightUnit);
+      localStorage.setItem('app_unit_system', unitSystem);
     } catch {
       // ignore storage errors (private mode, etc.)
     }
-    set({ weightUnit });
+    set({ unitSystem });
   },
 
   // --- cached data ---

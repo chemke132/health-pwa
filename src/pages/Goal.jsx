@@ -16,12 +16,19 @@ import Modal from '../components/Modal';
 import { Field, TextInput, FormActions } from '../components/Field';
 import { buildChartData, computeEta, latestWeight } from '../lib/goalMath';
 import { formatHeaderDate } from '../lib/timezone';
-import { toDisplayWeight, toKg, unitLabel } from '../lib/units';
+import {
+  toDisplayWeight,
+  toKg,
+  weightUnitLabel,
+  formatHeight,
+  cmToFtIn,
+  ftInToCm,
+} from '../lib/units';
 
 const BRAND = '#0ea5e9';
 const ACTUAL = '#94a3b8';
 
-function EtaBanner({ eta, unit }) {
+function EtaBanner({ eta, system }) {
   const { t, i18n } = useTranslation();
   const locale = i18n.resolvedLanguage?.startsWith('ko') ? 'ko' : 'en';
 
@@ -38,8 +45,8 @@ function EtaBanner({ eta, unit }) {
   if (eta.status === 'ok') {
     main = t('goal.etaOnTrack', { days: eta.etaDays });
     sub = t('goal.etaSub', {
-      val: toDisplayWeight(eta.weeklyLossKg, unit),
-      unit: unitLabel(unit),
+      val: toDisplayWeight(eta.weeklyLossKg, system),
+      unit: weightUnitLabel(system),
       date: formatHeaderDate(eta.etaDateKey, locale),
     });
   } else {
@@ -75,7 +82,7 @@ export default function Goal() {
   const currentDate = useAppStore((s) => s.currentDate);
   const updateProfile = useAppStore((s) => s.updateProfile);
   const setWeight = useAppStore((s) => s.setWeight);
-  const unit = useAppStore((s) => s.weightUnit);
+  const system = useAppStore((s) => s.unitSystem);
 
   const eta = computeEta({ weights, meals, workouts, profile });
   const rawChart = buildChartData(weights, 14);
@@ -83,15 +90,15 @@ export default function Goal() {
   // convert kg → display unit for the chart
   const chartData = rawChart.map((r) => ({
     ...r,
-    weight: toDisplayWeight(r.weight, unit),
-    ma: toDisplayWeight(r.ma, unit),
+    weight: toDisplayWeight(r.weight, system),
+    ma: toDisplayWeight(r.ma, system),
   }));
   const current = latestWeight(weights) ?? profile?.current_weight ?? null;
 
   // weight input (shown in the display unit; saved as kg)
   const existingToday = weights.find((w) => w.record_date === currentDate);
   const [weightVal, setWeightVal] = useState(
-    toDisplayWeight(existingToday?.weight, unit) ?? ''
+    toDisplayWeight(existingToday?.weight, system) ?? ''
   );
   const [savingW, setSavingW] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -101,7 +108,7 @@ export default function Goal() {
     if (weightVal === '') return;
     setSavingW(true);
     try {
-      await setWeight(toKg(weightVal, unit));
+      await setWeight(toKg(weightVal, system));
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 1500);
     } finally {
@@ -109,18 +116,30 @@ export default function Goal() {
     }
   };
 
-  // goal edit modal
+  // goal edit modal (height stored in cm; imperial edits ft + in)
   const [goalOpen, setGoalOpen] = useState(false);
-  const [goalForm, setGoalForm] = useState({ current_weight: '', target_weight: '', bmr: '' });
+  const [goalForm, setGoalForm] = useState({
+    current_weight: '',
+    target_weight: '',
+    bmr: '',
+    height_cm: '',
+    height_ft: '',
+    height_in: '',
+  });
   const [savingG, setSavingG] = useState(false);
   const [error, setError] = useState(null);
   const numOrNull = (v) => (v === '' ? null : Number(v));
+  const setG = (k) => (e) => setGoalForm((f) => ({ ...f, [k]: e.target.value }));
 
   const openGoal = () => {
+    const ftin = cmToFtIn(profile?.height);
     setGoalForm({
-      current_weight: toDisplayWeight(profile?.current_weight, unit) ?? '',
-      target_weight: toDisplayWeight(profile?.target_weight, unit) ?? '',
+      current_weight: toDisplayWeight(profile?.current_weight, system) ?? '',
+      target_weight: toDisplayWeight(profile?.target_weight, system) ?? '',
       bmr: profile?.bmr ?? '',
+      height_cm: profile?.height ?? '',
+      height_ft: ftin.ft,
+      height_in: ftin.in,
     });
     setError(null);
     setGoalOpen(true);
@@ -131,10 +150,15 @@ export default function Goal() {
     setSavingG(true);
     setError(null);
     try {
+      const height =
+        system === 'imperial'
+          ? ftInToCm(goalForm.height_ft, goalForm.height_in)
+          : numOrNull(goalForm.height_cm);
       await updateProfile({
-        current_weight: toKg(goalForm.current_weight, unit),
-        target_weight: toKg(goalForm.target_weight, unit),
+        current_weight: toKg(goalForm.current_weight, system),
+        target_weight: toKg(goalForm.target_weight, system),
         bmr: numOrNull(goalForm.bmr),
+        height,
       });
       setGoalOpen(false);
     } catch (err) {
@@ -145,8 +169,9 @@ export default function Goal() {
   };
 
   const metrics = [
-    { label: t('goal.currentWeight'), value: toDisplayWeight(current, unit), unit: unitLabel(unit) },
-    { label: t('goal.targetWeight'), value: toDisplayWeight(profile?.target_weight, unit), unit: unitLabel(unit) },
+    { label: t('goal.currentWeight'), value: toDisplayWeight(current, system), unit: weightUnitLabel(system) },
+    { label: t('goal.targetWeight'), value: toDisplayWeight(profile?.target_weight, system), unit: weightUnitLabel(system) },
+    { label: t('goal.height'), value: formatHeight(profile?.height, system), unit: '' },
     { label: t('goal.bmr'), value: profile?.bmr, unit: 'kcal' },
   ];
 
@@ -164,7 +189,7 @@ export default function Goal() {
       </div>
 
       {/* Top metrics */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {metrics.map((m) => (
           <Card key={m.label}>
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -179,7 +204,7 @@ export default function Goal() {
       </div>
 
       {/* ETA prediction */}
-      <EtaBanner eta={eta} unit={unit} />
+      <EtaBanner eta={eta} system={system} />
 
       {/* Moving-average chart */}
       <Card title={t('goal.chartTitle')}>
@@ -196,7 +221,7 @@ export default function Goal() {
               />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #e2e8f0' }}
-                formatter={(v, name) => [v != null ? `${v} ${unitLabel(unit)}` : '—', name]}
+                formatter={(v, name) => [v != null ? `${v} ${weightUnitLabel(system)}` : '—', name]}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Line
@@ -241,7 +266,7 @@ export default function Goal() {
               placeholder="0.0"
               className="w-36 bg-transparent text-4xl font-black tabular-nums text-slate-800 dark:text-slate-100 outline-none border-b-2 border-slate-200 dark:border-slate-700 focus:border-brand"
             />
-            <span className="text-lg font-bold text-slate-400 pb-1">{unitLabel(unit)}</span>
+            <span className="text-lg font-bold text-slate-400 pb-1">{weightUnitLabel(system)}</span>
           </div>
           <button
             type="submit"
@@ -256,23 +281,40 @@ export default function Goal() {
       {/* Edit goal / body metrics */}
       <Modal open={goalOpen} onClose={() => setGoalOpen(false)} title={t('form.editGoal')}>
         <form onSubmit={submitGoal} className="space-y-3">
-          <Field label={t('goal.currentWeight')}>
+          <Field label={`${t('goal.currentWeight')} (${weightUnitLabel(system)})`}>
             <TextInput
               type="number"
               inputMode="decimal"
               value={goalForm.current_weight}
-              onChange={(e) => setGoalForm((f) => ({ ...f, current_weight: e.target.value }))}
+              onChange={setG('current_weight')}
               autoFocus
             />
           </Field>
-          <Field label={t('goal.targetWeight')}>
+          <Field label={`${t('goal.targetWeight')} (${weightUnitLabel(system)})`}>
             <TextInput
               type="number"
               inputMode="decimal"
               value={goalForm.target_weight}
-              onChange={(e) => setGoalForm((f) => ({ ...f, target_weight: e.target.value }))}
+              onChange={setG('target_weight')}
             />
           </Field>
+
+          {/* Height: cm in metric, ft + in in imperial */}
+          {system === 'imperial' ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={`${t('goal.height')} (ft)`}>
+                <TextInput type="number" inputMode="numeric" value={goalForm.height_ft} onChange={setG('height_ft')} />
+              </Field>
+              <Field label={`${t('goal.height')} (in)`}>
+                <TextInput type="number" inputMode="numeric" value={goalForm.height_in} onChange={setG('height_in')} />
+              </Field>
+            </div>
+          ) : (
+            <Field label={`${t('goal.height')} (cm)`}>
+              <TextInput type="number" inputMode="numeric" value={goalForm.height_cm} onChange={setG('height_cm')} />
+            </Field>
+          )}
+
           <Field label={t('goal.bmr')}>
             <TextInput
               type="number"

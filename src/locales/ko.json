@@ -56,6 +56,7 @@
     "currentWeight": "현재 체중",
     "targetWeight": "목표 체중",
     "bmr": "기초대사량",
+    "height": "키",
     "kg": "kg",
     "etaTitle": "목표 달성 예측",
     "etaOnTrack": "현재 페이스 유지 시 D-{{days}}일 뒤 달성! 🎯",

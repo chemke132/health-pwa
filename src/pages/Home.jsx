@@ -9,7 +9,7 @@ import {
 import Card from '../components/Card';
 import TrendChart from '../components/TrendChart';
 import { shortDateLabel } from '../lib/timezone';
-import { toDisplayWeight, unitLabel } from '../lib/units';
+import { toDisplayWeight, weightUnitLabel } from '../lib/units';
 
 function Stat({ label, value, unit }) {
   return (
@@ -31,12 +31,12 @@ export default function Home() {
   const weight = useAppStore(selectWeightForDate);
   const weightSeries = useAppStore(selectWeightSeries);
   const calorieSeries = useAppStore(selectNetCalorieSeries);
-  const unit = useAppStore((s) => s.weightUnit);
+  const system = useAppStore((s) => s.unitSystem);
 
   // weight series is stored in kg → convert to the display unit
   const weightData = weightSeries.map((p) => ({
     label: shortDateLabel(p.dateKey),
-    value: toDisplayWeight(p.value, unit),
+    value: toDisplayWeight(p.value, system),
   }));
   const calorieData = calorieSeries.map((p) => ({
     label: shortDateLabel(p.dateKey),
@@ -59,8 +59,8 @@ export default function Home() {
         <Card>
           <Stat
             label={t('home.weight')}
-            value={weight ? toDisplayWeight(weight.weight, unit) : t('home.noWeight')}
-            unit={weight ? unitLabel(unit) : ''}
+            value={weight ? toDisplayWeight(weight.weight, system) : t('home.noWeight')}
+            unit={weight ? weightUnitLabel(system) : ''}
           />
         </Card>
       </div>
@@ -69,7 +69,7 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title={t('home.weightTrend')}>
           {weightData.length >= 2 ? (
-            <TrendChart data={weightData} unit={unitLabel(unit)} />
+            <TrendChart data={weightData} unit={weightUnitLabel(system)} />
           ) : (
             <p className="text-sm text-slate-400">{t('home.notEnoughData')}</p>
           )}

@@ -56,6 +56,7 @@
     "currentWeight": "Current weight",
     "targetWeight": "Target weight",
     "bmr": "BMR",
+    "height": "Height",
     "kg": "kg",
     "etaTitle": "Goal ETA",
     "etaOnTrack": "At this pace — goal in {{days}} days! 🎯",
