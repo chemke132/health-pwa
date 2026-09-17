@@ -127,3 +127,14 @@ export async function insertRoutine(userId, name, exercises) {
   if (error) throw error;
   return data;
 }
+
+export async function updateRoutine(id, name, exercises) {
+  const { data, error } = await supabase
+    .from('routines')
+    .update({ name, exercises })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}

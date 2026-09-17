@@ -8,7 +8,7 @@ import { weightUnitLabel } from '../lib/units';
  * Weights are typed in the current unit (kg/lb); the parent converts to kg on save.
  * `value` is the exercises array; `onChange` receives the updated array.
  */
-export default function ExerciseEditor({ value, onChange }) {
+export default function ExerciseEditor({ value, onChange, showInclude = true }) {
   const { t } = useTranslation();
   const wl = weightUnitLabel(useAppStore((s) => s.unitSystem));
   const exercises = value.length ? value : [emptyExercise()];
@@ -50,13 +50,15 @@ export default function ExerciseEditor({ value, onChange }) {
             }`}
           >
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={included}
-                onChange={() => setExercise(ei, { include: !included })}
-                aria-label="include exercise"
-                className="h-4 w-4 shrink-0 accent-[#0ea5e9]"
-              />
+              {showInclude && (
+                <input
+                  type="checkbox"
+                  checked={included}
+                  onChange={() => setExercise(ei, { include: !included })}
+                  aria-label="include exercise"
+                  className="h-4 w-4 shrink-0 accent-[#0ea5e9]"
+                />
+              )}
               <input
                 value={ex.name}
                 onChange={(e) => setExercise(ei, { name: e.target.value })}

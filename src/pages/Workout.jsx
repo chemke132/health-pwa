@@ -9,6 +9,7 @@ import { recognizeText } from '../lib/ocr';
 import { parseWorkoutText, estimateWorkout } from '../lib/ai';
 import ExerciseEditor from '../components/ExerciseEditor';
 import StrengthCharts from '../components/StrengthCharts';
+import RoutinePlanner from '../components/RoutinePlanner';
 import {
   emptyExercise,
   cleanExercises,
@@ -77,8 +78,6 @@ export default function Workout() {
   const profile = useAppStore((s) => s.appData.profile);
   const allWorkouts = useAppStore((s) => s.appData.workouts);
   const routines = useAppStore((s) => s.appData.routines);
-  const addRoutine = useAppStore((s) => s.addRoutine);
-  const removeRoutine = useAppStore((s) => s.removeRoutine);
   const system = useAppStore((s) => s.unitSystem);
 
   // exercises are edited in the display unit → convert weights to kg for storage/AI.
@@ -113,7 +112,7 @@ export default function Workout() {
   const [type, setType] = useState('strength'); // 'strength' | 'cardio'
   const [form, setForm] = useState(EMPTY);
   const [exercises, setExercises] = useState([emptyExercise()]);
-  const [routineName, setRoutineName] = useState('');
+  const [plannerOpen, setPlannerOpen] = useState(false);
   const [nlText, setNlText] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
   const [estimating, setEstimating] = useState(false);
@@ -137,24 +136,11 @@ export default function Workout() {
 
   const openModal = (t0) => {
     resetForm();
-    setRoutineName('');
     setType(t0);
     setOpen(true);
   };
 
   const loadRoutine = (r) => setExercises(fromKgExercises(r.exercises));
-
-  const saveRoutine = async () => {
-    const kg = toKgExercises(exercises, false); // save the whole plan
-    if (!kg.length) return;
-    const name = routineName.trim() || summarizeExercises(kg);
-    try {
-      await addRoutine(name, kg);
-      setRoutineName('');
-    } catch (err) {
-      setError(err.message);
-    }
-  };
 
   // Cardio: natural language → personalized calorie estimate
   const analyze = async () => {
@@ -287,20 +273,29 @@ export default function Workout() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl md:text-2xl font-black">{t('workout.title')}</h1>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-xl md:text-2xl font-black">{t('workout.title')}</h1>
+          <button
+            type="button"
+            onClick={() => setPlannerOpen(true)}
+            className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-bold text-slate-600 dark:text-slate-300"
+          >
+            📋 {t('form.routinePlan')}
+          </button>
+        </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => openModal('strength')}
-            className="rounded-xl bg-brand px-3 py-1.5 text-sm font-bold text-white shadow shadow-brand/30"
+            className="flex-1 rounded-xl bg-brand py-2.5 text-sm font-bold text-white shadow shadow-brand/30"
           >
             + {t('workout.strength')}
           </button>
           <button
             type="button"
             onClick={() => openModal('cardio')}
-            className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-bold text-slate-600 dark:text-slate-300"
+            className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300"
           >
             + {t('workout.cardio')}
           </button>
@@ -408,24 +403,17 @@ export default function Workout() {
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {t('form.savedRoutines')}
                 </span>
+                <p className="text-[11px] text-slate-400 mt-0.5">{t('form.pickRoutineHint')}</p>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {routines.map((r) => (
-                    <span
+                    <button
                       key={r.id}
-                      className="inline-flex items-center rounded-full border border-brand/40 bg-brand/10 text-brand-fg dark:text-brand text-sm font-semibold pl-3 pr-1 py-1"
+                      type="button"
+                      onClick={() => loadRoutine(r)}
+                      className="rounded-full border border-brand/40 bg-brand/10 text-brand-fg dark:text-brand text-sm font-semibold px-3 py-1 hover:bg-brand/20"
                     >
-                      <button type="button" onClick={() => loadRoutine(r)}>
-                        {r.name}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeRoutine(r.id)}
-                        aria-label="delete routine"
-                        className="ml-1 h-5 w-5 grid place-items-center rounded-full text-slate-400 hover:text-red-500"
-                      >
-                        ×
-                      </button>
-                    </span>
+                      {r.name}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -445,23 +433,6 @@ export default function Workout() {
               <div className="mt-2">
                 <ExerciseEditor value={exercises} onChange={setExercises} />
               </div>
-            </div>
-
-            {/* Save current exercises as a reusable routine */}
-            <div className="flex gap-2">
-              <input
-                value={routineName}
-                onChange={(e) => setRoutineName(e.target.value)}
-                placeholder={t('form.routineNamePlaceholder')}
-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand"
-              />
-              <button
-                type="button"
-                onClick={saveRoutine}
-                className="shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300"
-              >
-                {t('form.saveAsRoutine')}
-              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -486,6 +457,10 @@ export default function Workout() {
             <FormActions onCancel={() => setOpen(false)} saving={saving} cancelLabel={t('form.cancel')} saveLabel={t('form.save')} />
           </form>
         )}
+      </Modal>
+
+      <Modal open={plannerOpen} onClose={() => setPlannerOpen(false)} title={t('form.routinePlan')}>
+        <RoutinePlanner />
       </Modal>
 
       <Fab onClick={() => openModal('strength')} label={t('form.addWorkout')} />

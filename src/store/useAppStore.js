@@ -8,6 +8,7 @@ import {
   saveProfile,
   deleteRow,
   insertRoutine,
+  updateRoutine,
 } from '../lib/dataService';
 import { enqueue, flushOutbox } from '../lib/sync';
 import { todayKey } from '../lib/timezone';
@@ -164,6 +165,18 @@ export const useAppStore = create((set, get) => ({
     const { user, appData } = get();
     const row = await insertRoutine(user.id, name, exercises);
     set({ appData: { ...appData, routines: [...appData.routines, row] } });
+    return row;
+  },
+
+  async editRoutine(id, name, exercises) {
+    const { appData } = get();
+    const row = await updateRoutine(id, name, exercises);
+    set({
+      appData: {
+        ...appData,
+        routines: appData.routines.map((r) => (r.id === id ? row : r)),
+      },
+    });
     return row;
   },
 
