@@ -103,6 +103,7 @@
     "aiError": "AI analysis failed — enter manually.",
     "aiFilled": "Filled by AI. Review and save.",
     "exercises": "Exercises (weight × reps per set)",
+    "includeHint": "Only checked exercises are saved (uncheck what you skipped)",
     "exerciseName": "Exercise name (e.g. Bench press)",
     "addExercise": "+ Add exercise",
     "addSet": "+ Set",

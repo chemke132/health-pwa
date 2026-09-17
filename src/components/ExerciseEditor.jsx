@@ -41,12 +41,22 @@ export default function ExerciseEditor({ value, onChange }) {
     <div className="space-y-3">
       {exercises.map((ex, ei) => {
         const oneRm = best1RM(ex.sets);
+        const included = ex.include !== false;
         return (
           <div
             key={ei}
-            className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2"
+            className={`rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2 ${
+              included ? '' : 'opacity-50'
+            }`}
           >
             <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={included}
+                onChange={() => setExercise(ei, { include: !included })}
+                aria-label="include exercise"
+                className="h-4 w-4 shrink-0 accent-[#0ea5e9]"
+              />
               <input
                 value={ex.name}
                 onChange={(e) => setExercise(ei, { name: e.target.value })}
@@ -131,7 +141,7 @@ export default function ExerciseEditor({ value, onChange }) {
           {t('form.addExercise')}
         </button>
         <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
-          {t('form.volume')}: {computeVolume(exercises)} {wl}
+          {t('form.volume')}: {computeVolume(exercises.filter((e) => e.include !== false))} {wl}
         </span>
       </div>
     </div>

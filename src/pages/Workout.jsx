@@ -81,15 +81,19 @@ export default function Workout() {
   const removeRoutine = useAppStore((s) => s.removeRoutine);
   const system = useAppStore((s) => s.unitSystem);
 
-  // exercises are edited in the display unit → convert weights to kg for storage/AI
-  const toKgExercises = (exs) =>
-    cleanExercises(exs).map((ex) => ({
+  // exercises are edited in the display unit → convert weights to kg for storage/AI.
+  // `onlyIncluded` keeps only checked exercises (for logging a session); saving a
+  // routine keeps all of them (the full plan).
+  const toKgExercises = (exs, onlyIncluded = true) => {
+    const src = onlyIncluded ? exs.filter((e) => e.include !== false) : exs;
+    return cleanExercises(src).map((ex) => ({
       name: ex.name,
       sets: ex.sets.map((s) => ({
         weight: Math.round((toKg(s.weight, system) ?? 0) * 10) / 10,
         reps: s.reps,
       })),
     }));
+  };
 
   // stored kg exercises → display unit for the editor (loading a routine)
   const fromKgExercises = (exs) =>
@@ -141,7 +145,7 @@ export default function Workout() {
   const loadRoutine = (r) => setExercises(fromKgExercises(r.exercises));
 
   const saveRoutine = async () => {
-    const kg = toKgExercises(exercises);
+    const kg = toKgExercises(exercises, false); // save the whole plan
     if (!kg.length) return;
     const name = routineName.trim() || summarizeExercises(kg);
     try {
@@ -435,6 +439,9 @@ export default function Workout() {
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                 {t('form.exercises')}
               </span>
+              {routines.length > 0 && (
+                <p className="text-[11px] text-slate-400 mt-0.5">{t('form.includeHint')}</p>
+              )}
               <div className="mt-2">
                 <ExerciseEditor value={exercises} onChange={setExercises} />
               </div>

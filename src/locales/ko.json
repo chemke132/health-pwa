@@ -103,6 +103,7 @@
     "aiError": "AI 분석 실패 — 직접 입력해 주세요.",
     "aiFilled": "AI가 채운 값이에요. 수정 후 저장하세요.",
     "exercises": "운동 종목 (세트별 중량·횟수)",
+    "includeHint": "체크한 종목만 기록돼요 (안 한 종목은 체크 해제)",
     "exerciseName": "종목 이름 (예: 벤치프레스)",
     "addExercise": "+ 종목 추가",
     "addSet": "+ 세트",
