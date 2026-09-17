@@ -7,6 +7,13 @@ import Modal from '../components/Modal';
 import { Field, TextInput, FormActions } from '../components/Field';
 import { recognizeText } from '../lib/ocr';
 import { parseWorkoutText, estimateWorkout } from '../lib/ai';
+import ExerciseEditor from '../components/ExerciseEditor';
+import {
+  emptyExercise,
+  cleanExercises,
+  computeVolume,
+  summarizeExercises,
+} from '../lib/strength';
 
 const EMPTY = { workout_desc: '', burned_calories: '', duration_mins: '' };
 
@@ -22,6 +29,7 @@ export default function Workout() {
   const [nlText, setNlText] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [exercises, setExercises] = useState([emptyExercise()]);
   const [aiFilled, setAiFilled] = useState(false);
   const [phase, setPhase] = useState(null); // 'ocr' | 'ai' | null
   const [saving, setSaving] = useState(false);
@@ -32,6 +40,7 @@ export default function Workout() {
 
   const resetForm = () => {
     setForm(EMPTY);
+    setExercises([emptyExercise()]);
     setNlText('');
     setAiFilled(false);
     setError(null);
@@ -86,14 +95,19 @@ export default function Workout() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.workout_desc.trim()) return;
+    const cleaned = cleanExercises(exercises);
+    const desc = form.workout_desc.trim() || summarizeExercises(cleaned);
+    // need either a description or at least one logged exercise
+    if (!desc && !cleaned.length) return;
     setSaving(true);
     setError(null);
     try {
       await addWorkout({
-        workout_desc: form.workout_desc.trim(),
+        workout_desc: desc || '운동',
         burned_calories: num(form.burned_calories),
         duration_mins: num(form.duration_mins),
+        exercises: cleaned,
+        volume: computeVolume(cleaned),
         source: aiFilled ? 'ocr' : 'manual',
       });
       resetForm();
@@ -118,12 +132,25 @@ export default function Workout() {
           {workouts.map((w) => (
             <Card key={w.id}>
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <p className="font-bold text-slate-800 dark:text-slate-100">
                     {w.workout_desc}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  {Array.isArray(w.exercises) && w.exercises.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {w.exercises.map((ex, i) => (
+                        <li key={i} className="text-xs text-slate-500 dark:text-slate-400">
+                          <span className="font-semibold">{ex.name}</span>{' '}
+                          {(ex.sets || [])
+                            .map((s) => `${s.weight}×${s.reps}`)
+                            .join(', ')}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-slate-400 mt-1">
                     {t('workout.duration')}: {w.duration_mins ?? 0} {t('workout.mins')}
+                    {w.volume > 0 && ` · ${t('form.volume')} ${w.volume}kg`}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -219,6 +246,16 @@ export default function Workout() {
             <Field label={t('form.workoutDesc')}>
               <TextInput value={form.workout_desc} onChange={set('workout_desc')} />
             </Field>
+
+            <div>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {t('form.exercises')}
+              </span>
+              <div className="mt-2">
+                <ExerciseEditor value={exercises} onChange={setExercises} />
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('form.burned')}>
                 <TextInput type="number" inputMode="numeric" value={form.burned_calories} onChange={set('burned_calories')} />
