@@ -6,7 +6,7 @@ import Fab from '../components/Fab';
 import Modal from '../components/Modal';
 import { Field, TextInput, FormActions } from '../components/Field';
 import { recognizeText } from '../lib/ocr';
-import { parseWorkoutText } from '../lib/ai';
+import { parseWorkoutText, estimateWorkout } from '../lib/ai';
 
 const EMPTY = { workout_desc: '', burned_calories: '', duration_mins: '' };
 
@@ -15,9 +15,12 @@ export default function Workout() {
   const workouts = useAppStore(selectWorkoutsForDate);
   const addWorkout = useAppStore((s) => s.addWorkout);
   const removeRow = useAppStore((s) => s.removeRow);
+  const profile = useAppStore((s) => s.appData.profile);
 
   const fileRef = useRef(null);
   const [open, setOpen] = useState(false);
+  const [nlText, setNlText] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [aiFilled, setAiFilled] = useState(false);
   const [phase, setPhase] = useState(null); // 'ocr' | 'ai' | null
@@ -29,10 +32,31 @@ export default function Workout() {
 
   const resetForm = () => {
     setForm(EMPTY);
+    setNlText('');
     setAiFilled(false);
     setError(null);
     setPhase(null);
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  // Natural language → personalized calorie estimate (uses body stats).
+  const analyze = async () => {
+    if (!nlText.trim()) return;
+    setAnalyzing(true);
+    setError(null);
+    try {
+      const r = await estimateWorkout(nlText.trim(), profile);
+      setForm({
+        workout_desc: r.workout_desc,
+        burned_calories: String(r.burned_calories),
+        duration_mins: String(r.duration_mins),
+      });
+      setAiFilled(true);
+    } catch (err) {
+      setError(t('form.aiError') + ' ' + (err.message ?? ''));
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   // Hybrid: Tesseract OCR (frontend worker) → Gemini → structured fields.
@@ -127,6 +151,34 @@ export default function Workout() {
 
       <Modal open={open} onClose={() => setOpen(false)} title={t('form.addWorkout')}>
         <div className="space-y-4">
+          {/* Natural language → personalized AI estimate */}
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {t('form.workoutNlLabel')}
+            </span>
+            <textarea
+              rows={2}
+              value={nlText}
+              onChange={(e) => setNlText(e.target.value)}
+              placeholder={t('form.workoutNlPlaceholder')}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand resize-none"
+            />
+            <button
+              type="button"
+              onClick={analyze}
+              disabled={analyzing || !nlText.trim()}
+              className="w-full rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 text-sm font-bold disabled:opacity-50"
+            >
+              {analyzing ? t('form.analyzing') : t('form.analyze')}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs text-slate-300">
+            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+            {t('form.screenshotSection')}
+            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+          </div>
+
           {/* Screenshot → OCR → AI */}
           <div className="space-y-2">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">

@@ -44,10 +44,26 @@ Deno.serve(async (req) => {
   try {
     if (!GEMINI_API_KEY) return json({ error: 'GEMINI_API_KEY not set' }, 500);
 
-    const { kind, text, names, targetLang } = await req.json();
+    const { kind, text, names, targetLang, weight, height, bmr } = await req.json();
 
     let body;
-    if (kind === 'translate') {
+    if (kind === 'workout_estimate') {
+      if (!text || !String(text).trim()) return json({ error: 'text required' }, 400);
+      const stats =
+        `weight ${weight ?? 'unknown'} kg, height ${height ?? 'unknown'} cm, ` +
+        `BMR ${bmr ?? 'unknown'} kcal/day`;
+      const prompt =
+        `You are a fitness AI. Estimate the calories burned for the workout below ` +
+        `for a person with these stats: ${stats}. Account for exercise type, ` +
+        `intensity and duration. Reply with ONLY a JSON object: ` +
+        `{"workout_desc": short name, "burned_calories": integer kcal, ` +
+        `"duration_mins": integer minutes}. If duration is not stated, estimate a ` +
+        `reasonable one.\nWorkout: ${String(text)}`;
+      body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+      };
+    } else if (kind === 'translate') {
       if (!Array.isArray(names) || names.length === 0) {
         return json({ error: 'names required' }, 400);
       }

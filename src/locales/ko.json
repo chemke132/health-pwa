@@ -94,6 +94,8 @@
     "analyzing": "AI 분석 중…",
     "aiError": "AI 분석 실패 — 직접 입력해 주세요.",
     "aiFilled": "AI가 채운 값이에요. 수정 후 저장하세요.",
+    "workoutNlLabel": "운동 설명 (자연어)",
+    "workoutNlPlaceholder": "예: 벤치프레스 5세트, 30분 러닝",
     "screenshotSection": "스크린샷 분석 (애플 피트니스 등)",
     "pickImage": "📷 이미지 선택",
     "ocrRunning": "이미지에서 글자 읽는 중…",

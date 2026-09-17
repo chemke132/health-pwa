@@ -94,6 +94,8 @@
     "analyzing": "Analyzing…",
     "aiError": "AI analysis failed — enter manually.",
     "aiFilled": "Filled by AI. Review and save.",
+    "workoutNlLabel": "Describe your workout",
+    "workoutNlPlaceholder": "e.g. 5 sets of bench press, 30 min run",
     "screenshotSection": "Analyze screenshot (Apple Fitness, etc.)",
     "pickImage": "📷 Pick image",
     "ocrRunning": "Reading text from image…",

@@ -45,6 +45,17 @@ async function callGemini(kind, payload) {
         `Translate each of these food names to ${langName}. Keep quantities and ` +
         `units. Reply with ONLY a JSON object mapping each original string exactly ` +
         `to its translation.\nNames: ${JSON.stringify(payload.names)}`;
+    } else if (kind === 'workout_estimate') {
+      const stats =
+        `weight ${payload.weight ?? 'unknown'} kg, height ${payload.height ?? 'unknown'} cm, ` +
+        `BMR ${payload.bmr ?? 'unknown'} kcal/day`;
+      userText =
+        `You are a fitness AI. Estimate the calories burned for the workout below ` +
+        `for a person with these stats: ${stats}. Account for exercise type, ` +
+        `intensity and duration. Reply with ONLY a JSON object: ` +
+        `{"workout_desc": short name, "burned_calories": integer kcal, ` +
+        `"duration_mins": integer minutes}. If duration is not stated, estimate a ` +
+        `reasonable one.\nWorkout: ${payload.text}`;
     } else {
       systemInstruction = kind === 'workout' ? WORKOUT_SYSTEM_PROMPT : MEAL_SYSTEM_PROMPT;
       userText = payload;
@@ -62,10 +73,20 @@ async function callGemini(kind, payload) {
   }
 
   // Edge Function path (key stays server-side).
-  const body =
-    kind === 'translate'
-      ? { kind, names: payload.names, targetLang: payload.targetLang }
-      : { kind, text: payload };
+  let body;
+  if (kind === 'translate') {
+    body = { kind, names: payload.names, targetLang: payload.targetLang };
+  } else if (kind === 'workout_estimate') {
+    body = {
+      kind,
+      text: payload.text,
+      weight: payload.weight,
+      height: payload.height,
+      bmr: payload.bmr,
+    };
+  } else {
+    body = { kind, text: payload };
+  }
   const { data, error } = await supabase.functions.invoke('ai-parse', { body });
   if (error) throw error;
   if (data?.error) throw new Error(data.detail || data.error);
@@ -150,6 +171,27 @@ export async function parseWorkoutText(ocrText) {
 
   return {
     workout_desc: data?.workout_desc?.toString().trim() || '운동',
+    burned_calories: numeric(data?.burned_calories),
+    duration_mins: numeric(data?.duration_mins),
+  };
+}
+
+/**
+ * Natural-language workout → personalized calorie estimate using the user's
+ * body stats (weight/height/BMR).
+ * → { workout_desc, burned_calories, duration_mins }
+ */
+export async function estimateWorkout(text, profile) {
+  const parsed = await callGemini('workout_estimate', {
+    text,
+    weight: profile?.current_weight ?? null,
+    height: profile?.height ?? null,
+    bmr: profile?.bmr ?? null,
+  });
+  const data = Array.isArray(parsed) ? parsed[0] ?? {} : parsed;
+
+  return {
+    workout_desc: data?.workout_desc?.toString().trim() || text.trim(),
     burned_calories: numeric(data?.burned_calories),
     duration_mins: numeric(data?.duration_mins),
   };
