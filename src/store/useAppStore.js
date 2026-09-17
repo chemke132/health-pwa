@@ -9,6 +9,7 @@ import {
   deleteRow,
   insertRoutine,
   updateRoutine,
+  insertMealFavorite,
 } from '../lib/dataService';
 import { enqueue, flushOutbox } from '../lib/sync';
 import { todayKey } from '../lib/timezone';
@@ -80,7 +81,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   // --- cached data ---
-  appData: { meals: [], workouts: [], weights: [], profile: null, routines: [], fetchedAt: 0 },
+  appData: { meals: [], workouts: [], weights: [], profile: null, routines: [], mealFavorites: [], fetchedAt: 0 },
   dataLoading: false,
   dataError: null,
 
@@ -100,7 +101,7 @@ export const useAppStore = create((set, get) => ({
     set({
       user: null,
       currentDate: todayKey(),
-      appData: { meals: [], workouts: [], weights: [], profile: null, routines: [], fetchedAt: 0 },
+      appData: { meals: [], workouts: [], weights: [], profile: null, routines: [], mealFavorites: [], fetchedAt: 0 },
       dataError: null,
     }),
 
@@ -203,6 +204,26 @@ export const useAppStore = create((set, get) => ({
     const { appData } = get();
     await deleteRow('routines', id);
     set({ appData: { ...appData, routines: appData.routines.filter((r) => r.id !== id) } });
+  },
+
+  /* --- meal favorites (user-defined quick meals) --- */
+
+  async addMealFavorite(payload) {
+    const { user, appData } = get();
+    const row = await insertMealFavorite(user.id, payload);
+    set({ appData: { ...appData, mealFavorites: [...appData.mealFavorites, row] } });
+    return row;
+  },
+
+  async removeMealFavorite(id) {
+    const { appData } = get();
+    await deleteRow('meal_favorites', id);
+    set({
+      appData: {
+        ...appData,
+        mealFavorites: appData.mealFavorites.filter((f) => f.id !== id),
+      },
+    });
   },
 }));
 

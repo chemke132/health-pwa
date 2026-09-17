@@ -10,7 +10,7 @@ export async function fetchRecent30Days(userId) {
   const from = dateKeyDaysAgo(30);
   const to = todayKey();
 
-  const [meals, workouts, weights, profile, routines] = await Promise.all([
+  const [meals, workouts, weights, profile, routines, favorites] = await Promise.all([
     supabase
       .from('meals')
       .select('*')
@@ -38,6 +38,11 @@ export async function fetchRecent30Days(userId) {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: true }),
+    supabase
+      .from('meal_favorites')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }),
   ]);
 
   const firstError =
@@ -51,6 +56,7 @@ export async function fetchRecent30Days(userId) {
     weights: weights.data ?? [],
     profile: profile.data ?? null,
     routines: routines.error ? [] : routines.data ?? [],
+    mealFavorites: favorites.error ? [] : favorites.data ?? [],
     fetchedAt: Date.now(),
   };
 }
@@ -122,6 +128,16 @@ export async function insertRoutine(userId, name, exercises) {
   const { data, error } = await supabase
     .from('routines')
     .insert({ user_id: userId, name, exercises })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function insertMealFavorite(userId, payload) {
+  const { data, error } = await supabase
+    .from('meal_favorites')
+    .insert({ user_id: userId, ...payload })
     .select()
     .single();
   if (error) throw error;

@@ -30,6 +30,9 @@ export default function DateStrip() {
       </button>
 
       <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+        {atToday && (
+          <span className="text-brand-fg dark:text-brand">{t('common.today')} · </span>
+        )}
         {formatHeaderDate(currentDate, locale)}
       </span>
 

@@ -5,8 +5,8 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import { Field, TextInput, FormActions } from '../components/Field';
 import { parseMealText } from '../lib/ai';
-import { FAVORITE_MEALS } from '../lib/favoriteMeals';
 import { useFoodTranslations } from '../lib/foodTranslate';
+import MealFavorites from '../components/MealFavorites';
 
 const CATEGORIES = ['breakfast', 'lunch', 'dinner', 'snack', 'latenight'];
 const catOf = (m) => (CATEGORIES.includes(m.meal_type) ? m.meal_type : 'snack');
@@ -17,6 +17,7 @@ export default function Meal() {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage?.startsWith('ko') ? 'ko' : 'en';
   const meals = useAppStore(selectMealsForDate);
+  const mealFavorites = useAppStore((s) => s.appData.mealFavorites);
   const addMeal = useAppStore((s) => s.addMeal);
   const removeRow = useAppStore((s) => s.removeRow);
 
@@ -27,6 +28,7 @@ export default function Meal() {
 
   // modal
   const [open, setOpen] = useState(false);
+  const [favOpen, setFavOpen] = useState(false);
   const [mealType, setMealType] = useState('breakfast');
   const [nlText, setNlText] = useState('');
   const [form, setForm] = useState(EMPTY);
@@ -53,7 +55,7 @@ export default function Meal() {
   };
 
   const quickAdd = async (fav) => {
-    setChipBusy(fav.label);
+    setChipBusy(fav.id);
     setError(null);
     try {
       await addMeal({
@@ -120,7 +122,16 @@ export default function Meal() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl md:text-2xl font-black">{t('meal.title')}</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl md:text-2xl font-black">{t('meal.title')}</h1>
+        <button
+          type="button"
+          onClick={() => setFavOpen(true)}
+          className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-bold text-slate-600 dark:text-slate-300"
+        >
+          ⭐ {t('form.manageFavorites')}
+        </button>
+      </div>
 
       {error && !open && <p className="text-sm text-red-500">{error}</p>}
 
@@ -194,19 +205,32 @@ export default function Meal() {
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
               {t('form.favorites')}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {FAVORITE_MEALS.map((fav) => (
-                <button
-                  key={fav.label}
-                  type="button"
-                  onClick={() => quickAdd(fav)}
-                  disabled={chipBusy === fav.label}
-                  className="rounded-full border border-brand/40 bg-brand/10 text-brand-fg dark:text-brand px-3 py-1.5 text-sm font-semibold hover:bg-brand/20 disabled:opacity-50"
-                >
-                  {chipBusy === fav.label ? '…' : `+ ${lang === 'ko' ? fav.label : fav.labelEn}`}
-                </button>
-              ))}
-            </div>
+            {mealFavorites.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setFavOpen(true);
+                }}
+                className="text-xs text-brand-fg dark:text-brand font-semibold"
+              >
+                + {t('form.addFavorite')}
+              </button>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {mealFavorites.map((fav) => (
+                  <button
+                    key={fav.id}
+                    type="button"
+                    onClick={() => quickAdd(fav)}
+                    disabled={chipBusy === fav.id}
+                    className="rounded-full border border-brand/40 bg-brand/10 text-brand-fg dark:text-brand px-3 py-1.5 text-sm font-semibold hover:bg-brand/20 disabled:opacity-50"
+                  >
+                    {chipBusy === fav.id ? '…' : `+ ${fav.food_name}`}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Natural language → AI */}
@@ -265,6 +289,10 @@ export default function Meal() {
             />
           </form>
         </div>
+      </Modal>
+
+      <Modal open={favOpen} onClose={() => setFavOpen(false)} title={t('form.manageFavorites')}>
+        <MealFavorites />
       </Modal>
     </div>
   );
