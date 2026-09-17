@@ -62,6 +62,20 @@ export function summarizeExercises(exercises) {
   return `${named[0]} 외 ${named.length - 1}종목`;
 }
 
+/** Flatten exercises into a text summary for the AI calorie estimator. */
+export function exercisesToText(exercises) {
+  return (exercises || [])
+    .filter((e) => e.name?.trim())
+    .map((e) => {
+      const sets = (e.sets || [])
+        .filter((s) => num(s.weight) > 0 || num(s.reps) > 0)
+        .map((s) => `${num(s.weight)}kg x ${num(s.reps)}`)
+        .join(', ');
+      return sets ? `${e.name} (${sets})` : e.name;
+    })
+    .join('; ');
+}
+
 /** Strip empty sets/exercises before saving. */
 export function cleanExercises(exercises) {
   return (exercises || [])

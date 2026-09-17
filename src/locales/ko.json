@@ -43,7 +43,9 @@
     "empty": "이 날짜에 기록된 운동이 없습니다.",
     "burned": "소모",
     "duration": "시간",
-    "mins": "분"
+    "mins": "분",
+    "strength": "무산소 (근력)",
+    "cardio": "유산소"
   },
   "goal": {
     "title": "목표",
@@ -103,6 +105,8 @@
     "reps": "횟수",
     "volume": "볼륨",
     "estimated1rm": "추정 1RM",
+    "estimateCalories": "✨ AI로 칼로리 추정",
+    "estimating": "추정 중…",
     "workoutNlLabel": "운동 설명 (자연어)",
     "workoutNlPlaceholder": "예: 벤치프레스 5세트, 30분 러닝",
     "screenshotSection": "스크린샷 분석 (애플 피트니스 등)",

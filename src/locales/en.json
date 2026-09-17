@@ -43,7 +43,9 @@
     "empty": "No workouts logged for this day.",
     "burned": "Burned",
     "duration": "Duration",
-    "mins": "min"
+    "mins": "min",
+    "strength": "Strength",
+    "cardio": "Cardio"
   },
   "goal": {
     "title": "Goal",
@@ -103,6 +105,8 @@
     "reps": "Reps",
     "volume": "Volume",
     "estimated1rm": "Est. 1RM",
+    "estimateCalories": "✨ Estimate calories with AI",
+    "estimating": "Estimating…",
     "workoutNlLabel": "Describe your workout",
     "workoutNlPlaceholder": "e.g. 5 sets of bench press, 30 min run",
     "screenshotSection": "Analyze screenshot (Apple Fitness, etc.)",

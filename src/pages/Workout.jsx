@@ -13,9 +13,53 @@ import {
   cleanExercises,
   computeVolume,
   summarizeExercises,
+  exercisesToText,
 } from '../lib/strength';
 
 const EMPTY = { workout_desc: '', burned_calories: '', duration_mins: '' };
+
+const isStrength = (w) =>
+  w.workout_type === 'strength' || (Array.isArray(w.exercises) && w.exercises.length > 0);
+
+function WorkoutCard({ w, onDelete }) {
+  const { t } = useTranslation();
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-bold text-slate-800 dark:text-slate-100">{w.workout_desc}</p>
+          {Array.isArray(w.exercises) && w.exercises.length > 0 && (
+            <ul className="mt-1 space-y-0.5">
+              {w.exercises.map((ex, i) => (
+                <li key={i} className="text-xs text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold">{ex.name}</span>{' '}
+                  {(ex.sets || []).map((s) => `${s.weight}×${s.reps}`).join(', ')}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-xs text-slate-400 mt-1">
+            {t('workout.duration')}: {w.duration_mins ?? 0} {t('workout.mins')}
+            {w.volume > 0 && ` · ${t('form.volume')} ${w.volume}kg`}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-lg font-black tabular-nums text-emerald-600 whitespace-nowrap">
+            −{w.burned_calories ?? 0}
+            <span className="ml-1 text-xs font-medium text-slate-400">{t('meal.kcal')}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => onDelete(w.id)}
+            className="text-xs text-slate-300 hover:text-red-500"
+          >
+            {t('form.delete')}
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export default function Workout() {
   const { t } = useTranslation();
@@ -24,12 +68,17 @@ export default function Workout() {
   const removeRow = useAppStore((s) => s.removeRow);
   const profile = useAppStore((s) => s.appData.profile);
 
+  const strengthList = workouts.filter(isStrength);
+  const cardioList = workouts.filter((w) => !isStrength(w));
+
   const fileRef = useRef(null);
   const [open, setOpen] = useState(false);
-  const [nlText, setNlText] = useState('');
-  const [analyzing, setAnalyzing] = useState(false);
+  const [type, setType] = useState('strength'); // 'strength' | 'cardio'
   const [form, setForm] = useState(EMPTY);
   const [exercises, setExercises] = useState([emptyExercise()]);
+  const [nlText, setNlText] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [estimating, setEstimating] = useState(false);
   const [aiFilled, setAiFilled] = useState(false);
   const [phase, setPhase] = useState(null); // 'ocr' | 'ai' | null
   const [saving, setSaving] = useState(false);
@@ -48,7 +97,13 @@ export default function Workout() {
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  // Natural language → personalized calorie estimate (uses body stats).
+  const openModal = (t0) => {
+    resetForm();
+    setType(t0);
+    setOpen(true);
+  };
+
+  // Cardio: natural language → personalized calorie estimate
   const analyze = async () => {
     if (!nlText.trim()) return;
     setAnalyzing(true);
@@ -68,7 +123,28 @@ export default function Workout() {
     }
   };
 
-  // Hybrid: Tesseract OCR (frontend worker) → Gemini → structured fields.
+  // Strength: estimate calories from the logged exercises + duration
+  const estimateStrengthCalories = async () => {
+    const text = exercisesToText(exercises);
+    if (!text) return;
+    setEstimating(true);
+    setError(null);
+    try {
+      const dur = form.duration_mins ? `, ${form.duration_mins} min` : '';
+      const r = await estimateWorkout(`Weight training: ${text}${dur}`, profile);
+      setForm((f) => ({
+        ...f,
+        burned_calories: String(r.burned_calories),
+        duration_mins: f.duration_mins || String(r.duration_mins),
+      }));
+    } catch (err) {
+      setError(t('form.aiError') + ' ' + (err.message ?? ''));
+    } finally {
+      setEstimating(false);
+    }
+  };
+
+  // Cardio: Tesseract OCR → Gemini
   const onImage = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -76,10 +152,8 @@ export default function Workout() {
     try {
       setPhase('ocr');
       const rawText = await recognizeText(file);
-
       setPhase('ai');
       const r = await parseWorkoutText(rawText);
-
       setForm({
         workout_desc: r.workout_desc,
         burned_calories: String(r.burned_calories),
@@ -95,21 +169,38 @@ export default function Workout() {
 
   const submit = async (e) => {
     e.preventDefault();
-    const cleaned = cleanExercises(exercises);
-    const desc = form.workout_desc.trim() || summarizeExercises(cleaned);
-    // need either a description or at least one logged exercise
-    if (!desc && !cleaned.length) return;
-    setSaving(true);
     setError(null);
-    try {
-      await addWorkout({
-        workout_desc: desc || '운동',
+
+    let payload;
+    if (type === 'strength') {
+      const cleaned = cleanExercises(exercises);
+      const desc = form.workout_desc.trim() || summarizeExercises(cleaned);
+      if (!desc && !cleaned.length) return;
+      payload = {
+        workout_type: 'strength',
+        workout_desc: desc || t('workout.strength'),
         burned_calories: num(form.burned_calories),
         duration_mins: num(form.duration_mins),
         exercises: cleaned,
         volume: computeVolume(cleaned),
+        source: 'manual',
+      };
+    } else {
+      if (!form.workout_desc.trim()) return;
+      payload = {
+        workout_type: 'cardio',
+        workout_desc: form.workout_desc.trim(),
+        burned_calories: num(form.burned_calories),
+        duration_mins: num(form.duration_mins),
+        exercises: [],
+        volume: 0,
         source: aiFilled ? 'ocr' : 'manual',
-      });
+      };
+    }
+
+    setSaving(true);
+    try {
+      await addWorkout(payload);
       resetForm();
       setOpen(false);
     } catch (err) {
@@ -119,105 +210,103 @@ export default function Workout() {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <h1 className="text-xl md:text-2xl font-black">{t('workout.title')}</h1>
-
-      {workouts.length === 0 ? (
+  const section = (titleKey, list, emptyTypeLabel) => (
+    <div className="space-y-2">
+      <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">
+        {t(titleKey)}
+      </h2>
+      {list.length === 0 ? (
         <Card>
           <p className="text-sm text-slate-400">{t('workout.empty')}</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {workouts.map((w) => (
-            <Card key={w.id}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-800 dark:text-slate-100">
-                    {w.workout_desc}
-                  </p>
-                  {Array.isArray(w.exercises) && w.exercises.length > 0 && (
-                    <ul className="mt-1 space-y-0.5">
-                      {w.exercises.map((ex, i) => (
-                        <li key={i} className="text-xs text-slate-500 dark:text-slate-400">
-                          <span className="font-semibold">{ex.name}</span>{' '}
-                          {(ex.sets || [])
-                            .map((s) => `${s.weight}×${s.reps}`)
-                            .join(', ')}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <p className="text-xs text-slate-400 mt-1">
-                    {t('workout.duration')}: {w.duration_mins ?? 0} {t('workout.mins')}
-                    {w.volume > 0 && ` · ${t('form.volume')} ${w.volume}kg`}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-lg font-black tabular-nums text-emerald-600 whitespace-nowrap">
-                    −{w.burned_calories ?? 0}
-                    <span className="ml-1 text-xs font-medium text-slate-400">
-                      {t('meal.kcal')}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeRow('workouts', w.id)}
-                    className="text-xs text-slate-300 hover:text-red-500"
-                  >
-                    {t('form.delete')}
-                  </button>
-                </div>
-              </div>
-            </Card>
+          {list.map((w) => (
+            <WorkoutCard key={w.id} w={w} onDelete={(id) => removeRow('workouts', id)} />
           ))}
         </div>
       )}
+    </div>
+  );
 
-      <Fab onClick={() => { resetForm(); setOpen(true); }} label={t('form.addWorkout')} />
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl md:text-2xl font-black">{t('workout.title')}</h1>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => openModal('strength')}
+            className="rounded-xl bg-brand px-3 py-1.5 text-sm font-bold text-white shadow shadow-brand/30"
+          >
+            + {t('workout.strength')}
+          </button>
+          <button
+            type="button"
+            onClick={() => openModal('cardio')}
+            className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-bold text-slate-600 dark:text-slate-300"
+          >
+            + {t('workout.cardio')}
+          </button>
+        </div>
+      </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title={t('form.addWorkout')}>
-        <div className="space-y-4">
-          {/* Natural language → personalized AI estimate */}
-          <div className="space-y-2">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {t('form.workoutNlLabel')}
-            </span>
-            <textarea
-              rows={2}
-              value={nlText}
-              onChange={(e) => setNlText(e.target.value)}
-              placeholder={t('form.workoutNlPlaceholder')}
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand resize-none"
-            />
+      {section('workout.strength', strengthList)}
+      {section('workout.cardio', cardioList)}
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={type === 'strength' ? t('workout.strength') : t('workout.cardio')}
+      >
+        {/* type switch inside the modal */}
+        <div className="mb-4 inline-flex w-full rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+          {['strength', 'cardio'].map((ty) => (
             <button
+              key={ty}
               type="button"
-              onClick={analyze}
-              disabled={analyzing || !nlText.trim()}
-              className="w-full rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 text-sm font-bold disabled:opacity-50"
+              onClick={() => setType(ty)}
+              className={`flex-1 rounded-lg py-2 text-sm font-bold transition-colors ${
+                type === ty
+                  ? 'bg-white dark:bg-slate-900 text-brand-fg dark:text-brand shadow'
+                  : 'text-slate-500'
+              }`}
             >
-              {analyzing ? t('form.analyzing') : t('form.analyze')}
+              {t(`workout.${ty}`)}
             </button>
-          </div>
+          ))}
+        </div>
 
-          <div className="flex items-center gap-3 text-xs text-slate-300">
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-            {t('form.screenshotSection')}
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-          </div>
+        {type === 'cardio' ? (
+          <div className="space-y-4">
+            {/* Natural language → AI estimate */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {t('form.workoutNlLabel')}
+              </span>
+              <textarea
+                rows={2}
+                value={nlText}
+                onChange={(e) => setNlText(e.target.value)}
+                placeholder={t('form.workoutNlPlaceholder')}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-brand resize-none"
+              />
+              <button
+                type="button"
+                onClick={analyze}
+                disabled={analyzing || !nlText.trim()}
+                className="w-full rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 text-sm font-bold disabled:opacity-50"
+              >
+                {analyzing ? t('form.analyzing') : t('form.analyze')}
+              </button>
+            </div>
 
-          {/* Screenshot → OCR → AI */}
-          <div className="space-y-2">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-3 text-xs text-slate-300">
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
               {t('form.screenshotSection')}
-            </span>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              onChange={onImage}
-              className="hidden"
-            />
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={onImage} className="hidden" />
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
@@ -230,21 +319,34 @@ export default function Workout() {
                 ? t('form.aiParsing')
                 : t('form.pickImage')}
             </button>
-          </div>
 
-          <div className="flex items-center gap-3 text-xs text-slate-300">
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-            {t('form.manualSection')}
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-          </div>
+            <div className="flex items-center gap-3 text-xs text-slate-300">
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+              {t('form.manualSection')}
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+            </div>
 
-          {/* Editable fields */}
+            <form onSubmit={submit} className="space-y-3">
+              {aiFilled && <p className="text-xs text-emerald-600">{t('form.aiFilled')}</p>}
+              <Field label={t('form.workoutDesc')}>
+                <TextInput value={form.workout_desc} onChange={set('workout_desc')} />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('form.burned')}>
+                  <TextInput type="number" inputMode="numeric" value={form.burned_calories} onChange={set('burned_calories')} />
+                </Field>
+                <Field label={t('form.duration')}>
+                  <TextInput type="number" inputMode="numeric" value={form.duration_mins} onChange={set('duration_mins')} />
+                </Field>
+              </div>
+              {error && <p className="text-sm text-red-500">{error}</p>}
+              <FormActions onCancel={() => setOpen(false)} saving={saving} cancelLabel={t('form.cancel')} saveLabel={t('form.save')} />
+            </form>
+          </div>
+        ) : (
           <form onSubmit={submit} className="space-y-3">
-            {aiFilled && (
-              <p className="text-xs text-emerald-600">{t('form.aiFilled')}</p>
-            )}
             <Field label={t('form.workoutDesc')}>
-              <TextInput value={form.workout_desc} onChange={set('workout_desc')} />
+              <TextInput value={form.workout_desc} onChange={set('workout_desc')} placeholder={t('form.exerciseName')} />
             </Field>
 
             <div>
@@ -264,16 +366,23 @@ export default function Workout() {
                 <TextInput type="number" inputMode="numeric" value={form.duration_mins} onChange={set('duration_mins')} />
               </Field>
             </div>
+
+            <button
+              type="button"
+              onClick={estimateStrengthCalories}
+              disabled={estimating}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-50"
+            >
+              {estimating ? t('form.estimating') : t('form.estimateCalories')}
+            </button>
+
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <FormActions
-              onCancel={() => setOpen(false)}
-              saving={saving}
-              cancelLabel={t('form.cancel')}
-              saveLabel={t('form.save')}
-            />
+            <FormActions onCancel={() => setOpen(false)} saving={saving} cancelLabel={t('form.cancel')} saveLabel={t('form.save')} />
           </form>
-        </div>
+        )}
       </Modal>
+
+      <Fab onClick={() => openModal('strength')} label={t('form.addWorkout')} />
     </div>
   );
 }
