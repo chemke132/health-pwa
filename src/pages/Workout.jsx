@@ -154,11 +154,13 @@ export default function Workout() {
       const rawText = await recognizeText(file);
       setPhase('ai');
       const r = await parseWorkoutText(rawText);
-      setForm({
-        workout_desc: r.workout_desc,
+      // Keep a description the user already typed (a screenshot doesn't say
+      // what the workout was); only fill it when it's still empty.
+      setForm((f) => ({
+        workout_desc: f.workout_desc.trim() || r.workout_desc,
         burned_calories: String(r.burned_calories),
         duration_mins: String(r.duration_mins),
-      });
+      }));
       setAiFilled(true);
     } catch (err) {
       setError(t('form.aiError') + ' ' + (err.message ?? ''));
