@@ -102,6 +102,7 @@
     "addSet": "+ 세트",
     "setN": "{{n}}세트",
     "weightKg": "중량(kg)",
+    "weightShort": "중량",
     "reps": "횟수",
     "volume": "볼륨",
     "estimated1rm": "추정 1RM",

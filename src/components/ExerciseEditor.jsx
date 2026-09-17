@@ -1,12 +1,16 @@
 import { useTranslation } from 'react-i18next';
 import { emptySet, emptyExercise, computeVolume, best1RM } from '../lib/strength';
+import { useAppStore } from '../store/useAppStore';
+import { weightUnitLabel } from '../lib/units';
 
 /**
  * Structured strength entry: a list of exercises, each with per-set weight × reps.
+ * Weights are typed in the current unit (kg/lb); the parent converts to kg on save.
  * `value` is the exercises array; `onChange` receives the updated array.
  */
 export default function ExerciseEditor({ value, onChange }) {
   const { t } = useTranslation();
+  const wl = weightUnitLabel(useAppStore((s) => s.unitSystem));
   const exercises = value.length ? value : [emptyExercise()];
 
   const update = (next) => onChange(next);
@@ -73,7 +77,7 @@ export default function ExerciseEditor({ value, onChange }) {
                     inputMode="decimal"
                     value={s.weight}
                     onChange={(e) => setSet(ei, si, { weight: e.target.value })}
-                    placeholder={t('form.weightKg')}
+                    placeholder={`${t('form.weightShort')}(${wl})`}
                     className={inputCls}
                   />
                   <span className="text-slate-300 text-xs">×</span>
@@ -109,7 +113,8 @@ export default function ExerciseEditor({ value, onChange }) {
               </button>
               {oneRm > 0 && (
                 <span className="text-xs text-slate-400">
-                  {t('form.estimated1rm')} ≈ {oneRm}kg
+                  {t('form.estimated1rm')} ≈ {oneRm}
+                  {wl}
                 </span>
               )}
             </div>
@@ -126,7 +131,7 @@ export default function ExerciseEditor({ value, onChange }) {
           {t('form.addExercise')}
         </button>
         <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
-          {t('form.volume')}: {computeVolume(exercises)} kg
+          {t('form.volume')}: {computeVolume(exercises)} {wl}
         </span>
       </div>
     </div>

@@ -15,6 +15,7 @@ import {
   summarizeExercises,
   exercisesToText,
 } from '../lib/strength';
+import { toKg, toDisplayWeight, weightUnitLabel, LB_PER_KG } from '../lib/units';
 
 const EMPTY = { workout_desc: '', burned_calories: '', duration_mins: '' };
 
@@ -23,6 +24,10 @@ const isStrength = (w) =>
 
 function WorkoutCard({ w, onDelete }) {
   const { t } = useTranslation();
+  const system = useAppStore((s) => s.unitSystem);
+  const wl = weightUnitLabel(system);
+  // stored weights/volume are kg → show in the current unit
+  const dispVol = system === 'imperial' ? Math.round((w.volume || 0) * LB_PER_KG) : w.volume;
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
@@ -33,14 +38,16 @@ function WorkoutCard({ w, onDelete }) {
               {w.exercises.map((ex, i) => (
                 <li key={i} className="text-xs text-slate-500 dark:text-slate-400">
                   <span className="font-semibold">{ex.name}</span>{' '}
-                  {(ex.sets || []).map((s) => `${s.weight}×${s.reps}`).join(', ')}
+                  {(ex.sets || [])
+                    .map((s) => `${toDisplayWeight(s.weight, system)}×${s.reps}`)
+                    .join(', ')}
                 </li>
               ))}
             </ul>
           )}
           <p className="text-xs text-slate-400 mt-1">
             {t('workout.duration')}: {w.duration_mins ?? 0} {t('workout.mins')}
-            {w.volume > 0 && ` · ${t('form.volume')} ${w.volume}kg`}
+            {w.volume > 0 && ` · ${t('form.volume')} ${dispVol}${wl}`}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -67,6 +74,17 @@ export default function Workout() {
   const addWorkout = useAppStore((s) => s.addWorkout);
   const removeRow = useAppStore((s) => s.removeRow);
   const profile = useAppStore((s) => s.appData.profile);
+  const system = useAppStore((s) => s.unitSystem);
+
+  // exercises are edited in the display unit → convert weights to kg for storage/AI
+  const toKgExercises = (exs) =>
+    cleanExercises(exs).map((ex) => ({
+      name: ex.name,
+      sets: ex.sets.map((s) => ({
+        weight: Math.round((toKg(s.weight, system) ?? 0) * 10) / 10,
+        reps: s.reps,
+      })),
+    }));
 
   const strengthList = workouts.filter(isStrength);
   const cardioList = workouts.filter((w) => !isStrength(w));
@@ -125,7 +143,8 @@ export default function Workout() {
 
   // Strength: estimate calories from the logged exercises + duration
   const estimateStrengthCalories = async () => {
-    const text = exercisesToText(exercises);
+    // build text from kg-converted sets so the AI reads real kg values
+    const text = exercisesToText(toKgExercises(exercises));
     if (!text) return;
     setEstimating(true);
     setError(null);
@@ -175,7 +194,7 @@ export default function Workout() {
 
     let payload;
     if (type === 'strength') {
-      const cleaned = cleanExercises(exercises);
+      const cleaned = toKgExercises(exercises); // weights in kg (canonical)
       const desc = form.workout_desc.trim() || summarizeExercises(cleaned);
       if (!desc && !cleaned.length) return;
       payload = {
