@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore, selectMealsForDate } from '../store/useAppStore';
 import Card from '../components/Card';
-import Fab from '../components/Fab';
 import Modal from '../components/Modal';
 import { Field, TextInput, FormActions } from '../components/Field';
 import { parseMealText } from '../lib/ai';
 import { FAVORITE_MEALS } from '../lib/favoriteMeals';
 import { useFoodTranslations } from '../lib/foodTranslate';
+
+const CATEGORIES = ['breakfast', 'lunch', 'dinner', 'snack', 'latenight'];
+const catOf = (m) => (CATEGORIES.includes(m.meal_type) ? m.meal_type : 'snack');
 
 const EMPTY = { food_name: '', calories: '', protein: '', carbs: '', fat: '' };
 
@@ -18,13 +20,14 @@ export default function Meal() {
   const addMeal = useAppStore((s) => s.addMeal);
   const removeRow = useAppStore((s) => s.removeRow);
 
-  // Translate stored food names to the current language for display.
-  const nameMap = useFoodTranslations(
-    meals.map((m) => m.food_name),
-    lang
-  );
+  const nameMap = useFoodTranslations(meals.map((m) => m.food_name), lang);
 
+  const byCat = Object.fromEntries(CATEGORIES.map((c) => [c, []]));
+  for (const m of meals) byCat[catOf(m)].push(m);
+
+  // modal
   const [open, setOpen] = useState(false);
+  const [mealType, setMealType] = useState('breakfast');
   const [nlText, setNlText] = useState('');
   const [form, setForm] = useState(EMPTY);
   const [aiFilled, setAiFilled] = useState(false);
@@ -43,7 +46,12 @@ export default function Meal() {
     setError(null);
   };
 
-  // Bypass: hardcoded favorite → straight to Supabase, NO Gemini call.
+  const openAdd = (cat) => {
+    resetForm();
+    setMealType(cat);
+    setOpen(true);
+  };
+
   const quickAdd = async (fav) => {
     setChipBusy(fav.label);
     setError(null);
@@ -54,8 +62,10 @@ export default function Meal() {
         protein: fav.protein,
         carbs: fav.carbs,
         fat: fav.fat,
+        meal_type: mealType,
         input_type: 'favorite',
       });
+      setOpen(false);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -63,7 +73,6 @@ export default function Meal() {
     }
   };
 
-  // Natural language → Gemini → fill the editable fields.
   const analyze = async () => {
     if (!nlText.trim()) return;
     setAnalyzing(true);
@@ -97,6 +106,7 @@ export default function Meal() {
         protein: num(form.protein),
         carbs: num(form.carbs),
         fat: num(form.fat),
+        meal_type: mealType,
         input_type: aiFilled ? 'ai' : 'manual',
       });
       resetForm();
@@ -112,74 +122,93 @@ export default function Meal() {
     <div className="space-y-4">
       <h1 className="text-xl md:text-2xl font-black">{t('meal.title')}</h1>
 
-      {/* Bypass chips */}
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
-          {t('form.favorites')}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {FAVORITE_MEALS.map((fav) => (
-            <button
-              key={fav.label}
-              type="button"
-              onClick={() => quickAdd(fav)}
-              disabled={chipBusy === fav.label}
-              className="rounded-full border border-brand/40 bg-brand/10 text-brand-fg dark:text-brand px-3 py-1.5 text-sm font-semibold hover:bg-brand/20 disabled:opacity-50 transition"
-            >
-              {chipBusy === fav.label
-                ? '…'
-                : `+ ${lang === 'ko' ? fav.label : fav.labelEn}`}
-            </button>
-          ))}
-        </div>
+      {error && !open && <p className="text-sm text-red-500">{error}</p>}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {CATEGORIES.map((cat) => {
+          const list = byCat[cat];
+          const total = list.reduce((s, m) => s + (m.calories ?? 0), 0);
+          return (
+            <Card key={cat}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-baseline gap-2">
+                  <h2 className="font-black text-slate-800 dark:text-slate-100">
+                    {t(`meal.${cat}`)}
+                  </h2>
+                  {total > 0 && (
+                    <span className="text-xs font-semibold text-brand-fg dark:text-brand tabular-nums">
+                      {total} {t('meal.kcal')}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAdd(cat)}
+                  className="rounded-lg bg-brand/10 text-brand-fg dark:text-brand px-2.5 py-1 text-xs font-bold"
+                >
+                  + {t('form.add')}
+                </button>
+              </div>
+
+              {list.length === 0 ? (
+                <p className="text-xs text-slate-400">{t('meal.emptyCategory')}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {list.map((m) => (
+                    <li key={m.id} className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                          {nameMap[m.food_name] ?? m.food_name}
+                        </p>
+                        <p className="text-[11px] text-slate-400 space-x-1.5">
+                          <span>{t('meal.protein')} {m.protein ?? 0}g</span>
+                          <span>{t('meal.carbs')} {m.carbs ?? 0}g</span>
+                          <span>{t('meal.fat')} {m.fat ?? 0}g</span>
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className="text-sm font-black tabular-nums text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                          {m.calories ?? 0}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeRow('meals', m.id)}
+                          className="text-[11px] text-slate-300 hover:text-red-500"
+                        >
+                          {t('form.delete')}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          );
+        })}
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
-
-      {meals.length === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-400">{t('meal.empty')}</p>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {meals.map((m) => (
-            <Card key={m.id}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-bold text-slate-800 dark:text-slate-100">
-                    {nameMap[m.food_name] ?? m.food_name}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5 space-x-2">
-                    <span>{t('meal.protein')} {m.protein ?? 0}g</span>
-                    <span>{t('meal.carbs')} {m.carbs ?? 0}g</span>
-                    <span>{t('meal.fat')} {m.fat ?? 0}g</span>
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-lg font-black tabular-nums text-brand-fg dark:text-brand whitespace-nowrap">
-                    {m.calories ?? 0}
-                    <span className="ml-1 text-xs font-medium text-slate-400">
-                      {t('meal.kcal')}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeRow('meals', m.id)}
-                    className="text-xs text-slate-300 hover:text-red-500"
-                  >
-                    {t('form.delete')}
-                  </button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      <Fab onClick={() => { resetForm(); setOpen(true); }} label={t('form.addMeal')} />
-
-      <Modal open={open} onClose={() => setOpen(false)} title={t('form.addMeal')}>
+      <Modal open={open} onClose={() => setOpen(false)} title={`${t('form.addMeal')} · ${t(`meal.${mealType}`)}`}>
         <div className="space-y-4">
+          {/* Favorites (quick add to this meal) */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+              {t('form.favorites')}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {FAVORITE_MEALS.map((fav) => (
+                <button
+                  key={fav.label}
+                  type="button"
+                  onClick={() => quickAdd(fav)}
+                  disabled={chipBusy === fav.label}
+                  className="rounded-full border border-brand/40 bg-brand/10 text-brand-fg dark:text-brand px-3 py-1.5 text-sm font-semibold hover:bg-brand/20 disabled:opacity-50"
+                >
+                  {chipBusy === fav.label ? '…' : `+ ${lang === 'ko' ? fav.label : fav.labelEn}`}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Natural language → AI */}
           <div className="space-y-2">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -208,11 +237,8 @@ export default function Meal() {
             <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
           </div>
 
-          {/* Editable fields (AI-filled or manual) */}
           <form onSubmit={submit} className="space-y-3">
-            {aiFilled && (
-              <p className="text-xs text-emerald-600">{t('form.aiFilled')}</p>
-            )}
+            {aiFilled && <p className="text-xs text-emerald-600">{t('form.aiFilled')}</p>}
             <Field label={t('form.foodName')}>
               <TextInput value={form.food_name} onChange={set('food_name')} />
             </Field>

@@ -36,7 +36,13 @@
     "protein": "단백질",
     "carbs": "탄수화물",
     "fat": "지방",
-    "kcal": "kcal"
+    "kcal": "kcal",
+    "breakfast": "아침",
+    "lunch": "점심",
+    "dinner": "저녁",
+    "snack": "간식/프로틴",
+    "latenight": "야식",
+    "emptyCategory": "아직 없음"
   },
   "workout": {
     "title": "운동",

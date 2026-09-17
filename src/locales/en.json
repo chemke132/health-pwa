@@ -36,7 +36,13 @@
     "protein": "Protein",
     "carbs": "Carbs",
     "fat": "Fat",
-    "kcal": "kcal"
+    "kcal": "kcal",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack": "Snack/Protein",
+    "latenight": "Late-night",
+    "emptyCategory": "Nothing yet"
   },
   "workout": {
     "title": "Workouts",
