@@ -7,6 +7,7 @@ import {
   saveWeight,
   saveProfile,
   deleteRow,
+  insertRoutine,
 } from '../lib/dataService';
 import { enqueue, flushOutbox } from '../lib/sync';
 import { todayKey } from '../lib/timezone';
@@ -59,7 +60,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   // --- cached data ---
-  appData: { meals: [], workouts: [], weights: [], profile: null, fetchedAt: 0 },
+  appData: { meals: [], workouts: [], weights: [], profile: null, routines: [], fetchedAt: 0 },
   dataLoading: false,
   dataError: null,
 
@@ -79,7 +80,7 @@ export const useAppStore = create((set, get) => ({
     set({
       user: null,
       currentDate: todayKey(),
-      appData: { meals: [], workouts: [], weights: [], profile: null, fetchedAt: 0 },
+      appData: { meals: [], workouts: [], weights: [], profile: null, routines: [], fetchedAt: 0 },
       dataError: null,
     }),
 
@@ -155,6 +156,21 @@ export const useAppStore = create((set, get) => ({
     await deleteRow(table, id);
     const key = table; // 'meals' | 'workouts' | 'weights'
     set({ appData: { ...appData, [key]: appData[key].filter((r) => r.id !== id) } });
+  },
+
+  /* --- routines (saved workout templates) --- */
+
+  async addRoutine(name, exercises) {
+    const { user, appData } = get();
+    const row = await insertRoutine(user.id, name, exercises);
+    set({ appData: { ...appData, routines: [...appData.routines, row] } });
+    return row;
+  },
+
+  async removeRoutine(id) {
+    const { appData } = get();
+    await deleteRow('routines', id);
+    set({ appData: { ...appData, routines: appData.routines.filter((r) => r.id !== id) } });
   },
 }));
 

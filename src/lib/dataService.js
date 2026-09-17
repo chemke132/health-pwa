@@ -10,7 +10,7 @@ export async function fetchRecent30Days(userId) {
   const from = dateKeyDaysAgo(30);
   const to = todayKey();
 
-  const [meals, workouts, weights, profile] = await Promise.all([
+  const [meals, workouts, weights, profile, routines] = await Promise.all([
     supabase
       .from('meals')
       .select('*')
@@ -33,10 +33,16 @@ export async function fetchRecent30Days(userId) {
       .lte('record_date', to)
       .order('record_date', { ascending: false }),
     supabase.from('users').select('*').eq('id', userId).maybeSingle(),
+    supabase
+      .from('routines')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }),
   ]);
 
   const firstError =
     meals.error || workouts.error || weights.error || profile.error;
+  // routines table may not exist yet — treat as empty rather than failing
   if (firstError) throw firstError;
 
   return {
@@ -44,6 +50,7 @@ export async function fetchRecent30Days(userId) {
     workouts: workouts.data ?? [],
     weights: weights.data ?? [],
     profile: profile.data ?? null,
+    routines: routines.error ? [] : routines.data ?? [],
     fetchedAt: Date.now(),
   };
 }
@@ -109,4 +116,14 @@ export async function saveProfile(userId, patch) {
 export async function deleteRow(table, id) {
   const { error } = await supabase.from(table).delete().eq('id', id);
   if (error) throw error;
+}
+
+export async function insertRoutine(userId, name, exercises) {
+  const { data, error } = await supabase
+    .from('routines')
+    .insert({ user_id: userId, name, exercises })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
