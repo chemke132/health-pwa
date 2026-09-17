@@ -65,14 +65,17 @@ export function summarizeExercises(exercises) {
 /** Flatten exercises into a text summary for the AI calorie estimator. */
 export function exercisesToText(exercises) {
   return (exercises || [])
-    .filter((e) => e.name?.trim())
     .map((e) => {
+      const name = e.name?.trim();
       const sets = (e.sets || [])
         .filter((s) => num(s.weight) > 0 || num(s.reps) > 0)
         .map((s) => `${num(s.weight)}kg x ${num(s.reps)}`)
         .join(', ');
-      return sets ? `${e.name} (${sets})` : e.name;
+      if (!name && !sets) return null;
+      if (!name) return sets; // sets logged without a name still count
+      return sets ? `${name} (${sets})` : name;
     })
+    .filter(Boolean)
     .join('; ');
 }
 
