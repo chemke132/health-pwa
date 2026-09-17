@@ -142,6 +142,18 @@
     "aiParsing": "Extracting workout with AI…",
     "manualSection": "Manual entry"
   },
+  "nutrition": {
+    "title": "Nutrition target",
+    "maintain": "Maintain",
+    "diet": "Diet",
+    "bulk": "Bulk",
+    "calories": "Calories",
+    "eaten": "Eaten",
+    "target": "Target",
+    "left": "left",
+    "over": "over",
+    "needBmr": "Set your BMR in the Goal tab to see recommended calories & macros."
+  },
   "offline": {
     "message": "You're offline. (Offline Mode)"
   },

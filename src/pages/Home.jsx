@@ -8,6 +8,7 @@ import {
 } from '../store/useAppStore';
 import Card from '../components/Card';
 import TrendChart from '../components/TrendChart';
+import NutritionSummary from '../components/NutritionSummary';
 import { shortDateLabel } from '../lib/timezone';
 import { toDisplayWeight, weightUnitLabel } from '../lib/units';
 
@@ -64,6 +65,9 @@ export default function Home() {
           />
         </Card>
       </div>
+
+      {/* Recommended nutrition vs. eaten */}
+      <NutritionSummary />
 
       {/* Trend charts (last 30 days) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

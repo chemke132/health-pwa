@@ -7,6 +7,7 @@ import { Field, TextInput, FormActions } from '../components/Field';
 import { parseMealText } from '../lib/ai';
 import { useFoodTranslations } from '../lib/foodTranslate';
 import MealFavorites from '../components/MealFavorites';
+import NutritionSummary from '../components/NutritionSummary';
 
 const CATEGORIES = ['breakfast', 'lunch', 'dinner', 'snack', 'latenight'];
 const catOf = (m) => (CATEGORIES.includes(m.meal_type) ? m.meal_type : 'snack');
@@ -134,6 +135,8 @@ export default function Meal() {
       </div>
 
       {error && !open && <p className="text-sm text-red-500">{error}</p>}
+
+      <NutritionSummary showModeSelector />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {CATEGORIES.map((cat) => {

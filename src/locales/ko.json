@@ -142,6 +142,18 @@
     "aiParsing": "AI가 운동 정보 추출 중…",
     "manualSection": "직접 입력"
   },
+  "nutrition": {
+    "title": "영양 목표",
+    "maintain": "유지",
+    "diet": "다이어트",
+    "bulk": "벌크업",
+    "calories": "칼로리",
+    "eaten": "섭취",
+    "target": "권장",
+    "left": "남음",
+    "over": "초과",
+    "needBmr": "목표 탭에서 BMR을 설정하면 권장 칼로리·영양을 계산해요."
+  },
   "offline": {
     "message": "현재 오프라인 상태입니다. (Offline Mode)"
   },

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store/useAppStore';
-import { shiftDateKey, isTodayKey, todayKey, formatHeaderDate } from '../lib/timezone';
+import { shiftDateKey, isTodayKey, formatHeaderDate } from '../lib/timezone';
 
 /**
  * Date navigator. Moves the store's `currentDate` back/forward one day and lets
@@ -36,26 +36,15 @@ export default function DateStrip() {
         {formatHeaderDate(currentDate, locale)}
       </span>
 
-      <div className="flex items-center gap-2">
-        {!atToday && (
-          <button
-            type="button"
-            onClick={() => setCurrentDate(todayKey())}
-            className="rounded-full bg-brand/10 text-brand-fg dark:text-brand px-3 py-1.5 text-xs font-bold"
-          >
-            {t('common.today')}
-          </button>
-        )}
-        <button
-          type="button"
-          disabled={atToday}
-          onClick={() => setCurrentDate(shiftDateKey(currentDate, 1))}
-          aria-label="Next day"
-          className={`${arrowClass} disabled:opacity-40 disabled:cursor-not-allowed`}
-        >
-          ›
-        </button>
-      </div>
+      <button
+        type="button"
+        disabled={atToday}
+        onClick={() => setCurrentDate(shiftDateKey(currentDate, 1))}
+        aria-label="Next day"
+        className={`${arrowClass} disabled:opacity-40 disabled:cursor-not-allowed`}
+      >
+        ›
+      </button>
     </div>
   );
 }

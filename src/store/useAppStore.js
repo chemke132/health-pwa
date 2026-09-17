@@ -260,6 +260,20 @@ export const selectNetCalorieSeries = (state) => {
     .map((d) => ({ dateKey: d, value: byDate[d].in - byDate[d].out }));
 };
 
+/** Sum of consumed nutrition (meals) for the selected date. */
+export const selectMealMacros = (state) => {
+  const meals = state.appData.meals.filter((m) => m.record_date === state.currentDate);
+  return meals.reduce(
+    (acc, m) => ({
+      calories: acc.calories + (m.calories ?? 0),
+      protein: acc.protein + (m.protein ?? 0),
+      carbs: acc.carbs + (m.carbs ?? 0),
+      fat: acc.fat + (m.fat ?? 0),
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+};
+
 export const selectDayTotals = (state) => {
   const meals = selectMealsForDate(state);
   const workouts = selectWorkoutsForDate(state);
