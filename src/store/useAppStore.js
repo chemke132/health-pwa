@@ -28,6 +28,14 @@ function readUnitSystem() {
   }
 }
 
+function readLiftUnit() {
+  try {
+    return localStorage.getItem('app_lift_unit') === 'lb' ? 'lb' : 'kg';
+  } catch {
+    return 'kg';
+  }
+}
+
 /**
  * Single source of truth for the app.
  *  - user:        the authenticated Supabase user (or null)
@@ -58,6 +66,17 @@ export const useAppStore = create((set, get) => ({
       // ignore storage errors (private mode, etc.)
     }
     set({ unitSystem });
+  },
+
+  // --- lifting weight unit ('kg'|'lb'), independent of unitSystem ---
+  liftUnit: readLiftUnit(),
+  setLiftUnit: (liftUnit) => {
+    try {
+      localStorage.setItem('app_lift_unit', liftUnit);
+    } catch {
+      // ignore
+    }
+    set({ liftUnit });
   },
 
   // --- cached data ---

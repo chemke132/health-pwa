@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store/useAppStore';
 import ExerciseEditor from './ExerciseEditor';
 import { emptyExercise, cleanExercises, summarizeExercises } from '../lib/strength';
-import { toKg, toDisplayWeight } from '../lib/units';
+import { liftToKg, kgToLift } from '../lib/units';
 
 /**
  * Plan/manage reusable routines (the full plan: exercises, sets, weights).
@@ -15,7 +15,7 @@ export default function RoutinePlanner() {
   const addRoutine = useAppStore((s) => s.addRoutine);
   const editRoutineStore = useAppStore((s) => s.editRoutine);
   const removeRoutine = useAppStore((s) => s.removeRoutine);
-  const system = useAppStore((s) => s.unitSystem);
+  const liftUnit = useAppStore((s) => s.liftUnit);
 
   const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState('');
@@ -27,7 +27,7 @@ export default function RoutinePlanner() {
     cleanExercises(exs).map((ex) => ({
       name: ex.name,
       sets: ex.sets.map((s) => ({
-        weight: Math.round((toKg(s.weight, system) ?? 0) * 10) / 10,
+        weight: Math.round((liftToKg(s.weight, liftUnit) ?? 0) * 10) / 10,
         reps: s.reps,
       })),
     }));
@@ -36,7 +36,7 @@ export default function RoutinePlanner() {
     (exs && exs.length ? exs : [emptyExercise()]).map((ex) => ({
       name: ex.name || '',
       sets: (ex.sets && ex.sets.length ? ex.sets : [{ weight: '', reps: '' }]).map((s) => ({
-        weight: s.weight ? toDisplayWeight(s.weight, system) : '',
+        weight: s.weight ? kgToLift(s.weight, liftUnit) : '',
         reps: s.reps ?? '',
       })),
     }));

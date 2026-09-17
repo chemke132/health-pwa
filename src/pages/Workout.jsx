@@ -17,7 +17,7 @@ import {
   summarizeExercises,
   exercisesToText,
 } from '../lib/strength';
-import { toKg, toDisplayWeight, weightUnitLabel, LB_PER_KG } from '../lib/units';
+import { liftToKg, kgToLift, liftLabel, LB_PER_KG } from '../lib/units';
 
 const EMPTY = { workout_desc: '', burned_calories: '', duration_mins: '' };
 
@@ -26,10 +26,10 @@ const isStrength = (w) =>
 
 function WorkoutCard({ w, onDelete }) {
   const { t } = useTranslation();
-  const system = useAppStore((s) => s.unitSystem);
-  const wl = weightUnitLabel(system);
-  // stored weights/volume are kg → show in the current unit
-  const dispVol = system === 'imperial' ? Math.round((w.volume || 0) * LB_PER_KG) : w.volume;
+  const liftUnit = useAppStore((s) => s.liftUnit);
+  const wl = liftLabel(liftUnit);
+  // stored weights/volume are kg → show in the lifting unit
+  const dispVol = liftUnit === 'lb' ? Math.round((w.volume || 0) * LB_PER_KG) : w.volume;
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
@@ -41,7 +41,7 @@ function WorkoutCard({ w, onDelete }) {
                 <li key={i} className="text-xs text-slate-500 dark:text-slate-400">
                   <span className="font-semibold">{ex.name}</span>{' '}
                   {(ex.sets || [])
-                    .map((s) => `${toDisplayWeight(s.weight, system)}×${s.reps}`)
+                    .map((s) => `${kgToLift(s.weight, liftUnit)}×${s.reps}`)
                     .join(', ')}
                 </li>
               ))}
@@ -78,9 +78,9 @@ export default function Workout() {
   const profile = useAppStore((s) => s.appData.profile);
   const allWorkouts = useAppStore((s) => s.appData.workouts);
   const routines = useAppStore((s) => s.appData.routines);
-  const system = useAppStore((s) => s.unitSystem);
+  const liftUnit = useAppStore((s) => s.liftUnit);
 
-  // exercises are edited in the display unit → convert weights to kg for storage/AI.
+  // exercises are edited in the lifting unit → convert weights to kg for storage/AI.
   // `onlyIncluded` keeps only checked exercises (for logging a session); saving a
   // routine keeps all of them (the full plan).
   const toKgExercises = (exs, onlyIncluded = true) => {
@@ -88,18 +88,18 @@ export default function Workout() {
     return cleanExercises(src).map((ex) => ({
       name: ex.name,
       sets: ex.sets.map((s) => ({
-        weight: Math.round((toKg(s.weight, system) ?? 0) * 10) / 10,
+        weight: Math.round((liftToKg(s.weight, liftUnit) ?? 0) * 10) / 10,
         reps: s.reps,
       })),
     }));
   };
 
-  // stored kg exercises → display unit for the editor (loading a routine)
+  // stored kg exercises → lifting unit for the editor (loading a routine)
   const fromKgExercises = (exs) =>
     (exs && exs.length ? exs : [emptyExercise()]).map((ex) => ({
       name: ex.name || '',
       sets: (ex.sets && ex.sets.length ? ex.sets : [{ weight: '', reps: '' }]).map((s) => ({
-        weight: s.weight ? toDisplayWeight(s.weight, system) : '',
+        weight: s.weight ? kgToLift(s.weight, liftUnit) : '',
         reps: s.reps ?? '',
       })),
     }));

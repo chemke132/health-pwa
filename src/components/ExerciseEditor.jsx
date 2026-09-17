@@ -1,17 +1,36 @@
 import { useTranslation } from 'react-i18next';
 import { emptySet, emptyExercise, computeVolume, best1RM } from '../lib/strength';
 import { useAppStore } from '../store/useAppStore';
-import { weightUnitLabel } from '../lib/units';
+import { liftLabel, liftToKg, kgToLift } from '../lib/units';
 
 /**
  * Structured strength entry: a list of exercises, each with per-set weight × reps.
- * Weights are typed in the current unit (kg/lb); the parent converts to kg on save.
- * `value` is the exercises array; `onChange` receives the updated array.
+ * Weights are typed in the lifting unit (kg/lb, its own toggle here), and the
+ * parent converts to kg on save. `value` is the exercises array; `onChange`
+ * receives the updated array.
  */
 export default function ExerciseEditor({ value, onChange, showInclude = true }) {
   const { t } = useTranslation();
-  const wl = weightUnitLabel(useAppStore((s) => s.unitSystem));
+  const liftUnit = useAppStore((s) => s.liftUnit);
+  const setLiftUnit = useAppStore((s) => s.setLiftUnit);
+  const wl = liftLabel(liftUnit);
   const exercises = value.length ? value : [emptyExercise()];
+
+  // Switch the lifting unit and convert the values already entered.
+  const changeUnit = (u) => {
+    if (u === liftUnit) return;
+    onChange(
+      exercises.map((ex) => ({
+        ...ex,
+        sets: ex.sets.map((s) =>
+          s.weight === '' || s.weight == null
+            ? s
+            : { ...s, weight: kgToLift(liftToKg(s.weight, liftUnit), u) }
+        ),
+      }))
+    );
+    setLiftUnit(u);
+  };
 
   const update = (next) => onChange(next);
 
@@ -39,6 +58,26 @@ export default function ExerciseEditor({ value, onChange, showInclude = true }) 
 
   return (
     <div className="space-y-3">
+      <div className="flex justify-end">
+        <div className="inline-flex items-center rounded-full bg-slate-200/70 dark:bg-slate-700/70 p-0.5 text-xs font-semibold">
+          {['kg', 'lb'].map((u) => (
+            <button
+              key={u}
+              type="button"
+              onClick={() => changeUnit(u)}
+              aria-pressed={liftUnit === u}
+              className={`px-3 py-1 rounded-full transition-colors ${
+                liftUnit === u
+                  ? 'bg-white dark:bg-slate-900 text-brand-fg dark:text-brand shadow'
+                  : 'text-slate-500 dark:text-slate-300'
+              }`}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {exercises.map((ex, ei) => {
         const oneRm = best1RM(ex.sets);
         const included = ex.include !== false;

@@ -15,7 +15,7 @@ import { useAppStore } from '../store/useAppStore';
 import Card from './Card';
 import { weeklyVolumeSeries, oneRmSeries, exerciseNames } from '../lib/strength';
 import { shortDateLabel } from '../lib/timezone';
-import { toDisplayWeight, weightUnitLabel, LB_PER_KG } from '../lib/units';
+import { kgToLift, liftLabel, LB_PER_KG } from '../lib/units';
 
 const BRAND = '#0ea5e9';
 const AXIS = '#94a3b8';
@@ -26,14 +26,14 @@ const AXIS = '#94a3b8';
  */
 export default function StrengthCharts({ workouts }) {
   const { t } = useTranslation();
-  const system = useAppStore((s) => s.unitSystem);
-  const wl = weightUnitLabel(system);
+  const liftUnit = useAppStore((s) => s.liftUnit);
+  const wl = liftLabel(liftUnit);
 
   const names = exerciseNames(workouts);
   const [lift, setLift] = useState(names[0] || '');
   const selected = names.includes(lift) ? lift : names[0] || '';
 
-  const toDisp = (kg) => (system === 'imperial' ? Math.round(kg * LB_PER_KG) : Math.round(kg));
+  const toDisp = (kg) => (liftUnit === 'lb' ? Math.round(kg * LB_PER_KG) : Math.round(kg));
 
   const volumeData = weeklyVolumeSeries(workouts).map((r) => ({
     label: shortDateLabel(r.weekStart),
@@ -43,7 +43,7 @@ export default function StrengthCharts({ workouts }) {
   const rmData = selected
     ? oneRmSeries(workouts, selected).map((r) => ({
         label: shortDateLabel(r.dateKey),
-        value: toDisplayWeight(r.value, system),
+        value: kgToLift(r.value, liftUnit),
       }))
     : [];
 

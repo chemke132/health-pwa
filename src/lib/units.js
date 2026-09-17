@@ -31,6 +31,11 @@ export function toKg(value, system) {
   return system === 'imperial' ? n / LB_PER_KG : n;
 }
 
+/* --- lifting weight has its OWN unit ('kg'|'lb'), independent of the system --- */
+export const liftLabel = (u) => (u === 'lb' ? 'lb' : 'kg');
+export const liftToKg = (v, u) => toKg(v, u === 'lb' ? 'imperial' : 'metric');
+export const kgToLift = (kg, u) => toDisplayWeight(kg, u === 'lb' ? 'imperial' : 'metric');
+
 /* ------------------------------- height -------------------------------- */
 
 /** cm → { ft, in } (inches rounded, carrying to feet at 12). */
