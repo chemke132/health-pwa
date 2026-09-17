@@ -45,7 +45,11 @@
     "duration": "Duration",
     "mins": "min",
     "strength": "Strength",
-    "cardio": "Cardio"
+    "cardio": "Cardio",
+    "volumeTrend": "Weekly volume",
+    "rmTrend": "1RM progression",
+    "noStrengthData": "Charts appear once you log some strength work.",
+    "charts": "Muscle-growth indicators"
   },
   "goal": {
     "title": "Goal",

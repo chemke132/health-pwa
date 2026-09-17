@@ -45,7 +45,11 @@
     "duration": "시간",
     "mins": "분",
     "strength": "무산소 (근력)",
-    "cardio": "유산소"
+    "cardio": "유산소",
+    "volumeTrend": "주간 볼륨 추이",
+    "rmTrend": "1RM 진척도",
+    "noStrengthData": "근력 기록이 쌓이면 그래프가 표시돼요.",
+    "charts": "근성장 지표"
   },
   "goal": {
     "title": "목표",

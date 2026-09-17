@@ -8,6 +8,7 @@ import { Field, TextInput, FormActions } from '../components/Field';
 import { recognizeText } from '../lib/ocr';
 import { parseWorkoutText, estimateWorkout } from '../lib/ai';
 import ExerciseEditor from '../components/ExerciseEditor';
+import StrengthCharts from '../components/StrengthCharts';
 import {
   emptyExercise,
   cleanExercises,
@@ -74,6 +75,7 @@ export default function Workout() {
   const addWorkout = useAppStore((s) => s.addWorkout);
   const removeRow = useAppStore((s) => s.removeRow);
   const profile = useAppStore((s) => s.appData.profile);
+  const allWorkouts = useAppStore((s) => s.appData.workouts);
   const system = useAppStore((s) => s.unitSystem);
 
   // exercises are edited in the display unit → convert weights to kg for storage/AI
@@ -274,6 +276,8 @@ export default function Workout() {
 
       {section('workout.strength', strengthList)}
       {section('workout.cardio', cardioList)}
+
+      <StrengthCharts workouts={allWorkouts} />
 
       <Modal
         open={open}

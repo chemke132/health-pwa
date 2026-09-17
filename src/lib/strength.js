@@ -1,3 +1,5 @@
+import { parseISO, format, startOfWeek } from 'date-fns';
+
 /**
  * Structured strength data lives on `workouts.exercises` (jsonb):
  *   [{ name: string, sets: [{ weight: number, reps: number }, ...] }, ...]
@@ -60,6 +62,36 @@ export function summarizeExercises(exercises) {
   if (!named.length) return '';
   if (named.length === 1) return named[0];
   return `${named[0]} 외 ${named.length - 1}종목`;
+}
+
+/** Weekly total training volume (kg), oldest → newest. */
+export function weeklyVolumeSeries(workouts) {
+  const byWeek = {};
+  for (const w of workouts) {
+    if (!(Number(w.volume) > 0)) continue;
+    const d = parseISO(`${w.record_date}T00:00:00`);
+    const ws = format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    byWeek[ws] = (byWeek[ws] || 0) + Number(w.volume);
+  }
+  return Object.keys(byWeek)
+    .sort()
+    .map((weekStart) => ({ weekStart, volume: Math.round(byWeek[weekStart]) }));
+}
+
+/** Best estimated 1RM (kg) per day for one exercise, oldest → newest. */
+export function oneRmSeries(workouts, name) {
+  const byDate = {};
+  for (const w of workouts) {
+    for (const ex of w.exercises || []) {
+      if (ex.name?.trim() === name) {
+        const rm = best1RM(ex.sets);
+        if (rm > 0) byDate[w.record_date] = Math.max(byDate[w.record_date] || 0, rm);
+      }
+    }
+  }
+  return Object.keys(byDate)
+    .sort()
+    .map((dateKey) => ({ dateKey, value: byDate[dateKey] }));
 }
 
 /** Flatten exercises into a text summary for the AI calorie estimator. */
