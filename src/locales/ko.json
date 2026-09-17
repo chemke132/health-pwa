@@ -50,6 +50,8 @@
   "goal": {
     "title": "목표",
     "currentWeight": "현재 체중",
+    "startWeight": "시작 체중",
+    "vsStart": "시작 대비 변화",
     "targetWeight": "목표 체중",
     "bmr": "기초대사량",
     "height": "키",

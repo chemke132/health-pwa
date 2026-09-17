@@ -132,6 +132,7 @@ export default function Goal() {
   // goal edit modal (height stored in cm; imperial edits ft + in)
   const [goalOpen, setGoalOpen] = useState(false);
   const [goalForm, setGoalForm] = useState({
+    start_weight: '',
     current_weight: '',
     target_weight: '',
     bmr: '',
@@ -147,6 +148,7 @@ export default function Goal() {
   const openGoal = () => {
     const ftin = cmToFtIn(profile?.height);
     setGoalForm({
+      start_weight: toDisplayWeight(profile?.start_weight, system) ?? '',
       current_weight: toDisplayWeight(profile?.current_weight, system) ?? '',
       target_weight: toDisplayWeight(profile?.target_weight, system) ?? '',
       bmr: profile?.bmr ?? '',
@@ -168,6 +170,7 @@ export default function Goal() {
           ? ftInToCm(goalForm.height_ft, goalForm.height_in)
           : numOrNull(goalForm.height_cm);
       await updateProfile({
+        start_weight: toKg(goalForm.start_weight, system),
         current_weight: toKg(goalForm.current_weight, system),
         target_weight: toKg(goalForm.target_weight, system),
         bmr: numOrNull(goalForm.bmr),
@@ -215,6 +218,36 @@ export default function Goal() {
           </Card>
         ))}
       </div>
+
+      {/* Start → current progress (motivation) */}
+      {profile?.start_weight != null && current != null && (() => {
+        const startD = toDisplayWeight(profile.start_weight, system);
+        const curD = toDisplayWeight(current, system);
+        const delta = Math.round((curD - startD) * 10) / 10;
+        const lost = delta <= 0;
+        return (
+          <Card>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              {t('goal.vsStart')}
+            </span>
+            <div className="mt-1 flex items-baseline gap-3 flex-wrap">
+              <span className="text-lg font-black tabular-nums text-slate-500 dark:text-slate-400">
+                {startD} <span className="text-slate-300">→</span>{' '}
+                <span className="text-slate-800 dark:text-slate-100">{curD}</span>{' '}
+                <span className="text-sm font-medium text-slate-400">{weightUnitLabel(system)}</span>
+              </span>
+              <span
+                className={`text-lg font-black tabular-nums ${
+                  lost ? 'text-emerald-600' : 'text-amber-600'
+                }`}
+              >
+                {lost ? '▼' : '▲'} {Math.abs(delta)}
+                {weightUnitLabel(system)}
+              </span>
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* ETA prediction */}
       <EtaBanner eta={eta} system={system} />
@@ -294,13 +327,21 @@ export default function Goal() {
       {/* Edit goal / body metrics */}
       <Modal open={goalOpen} onClose={() => setGoalOpen(false)} title={t('form.editGoal')}>
         <form onSubmit={submitGoal} className="space-y-3">
+          <Field label={`${t('goal.startWeight')} (${weightUnitLabel(system)})`}>
+            <TextInput
+              type="number"
+              inputMode="decimal"
+              value={goalForm.start_weight}
+              onChange={setG('start_weight')}
+              autoFocus
+            />
+          </Field>
           <Field label={`${t('goal.currentWeight')} (${weightUnitLabel(system)})`}>
             <TextInput
               type="number"
               inputMode="decimal"
               value={goalForm.current_weight}
               onChange={setG('current_weight')}
-              autoFocus
             />
           </Field>
           <Field label={`${t('goal.targetWeight')} (${weightUnitLabel(system)})`}>

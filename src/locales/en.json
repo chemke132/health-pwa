@@ -50,6 +50,8 @@
   "goal": {
     "title": "Goal",
     "currentWeight": "Current weight",
+    "startWeight": "Starting weight",
+    "vsStart": "Change since start",
     "targetWeight": "Target weight",
     "bmr": "BMR",
     "height": "Height",
